@@ -1,0 +1,6 @@
+requests
+biopython
+openai
+chromadb
+python-dotenv
+numpy 
