@@ -44,6 +44,9 @@ TOP_K = 10
 # LLM Model for MeSH generation (can be changed, e.g., "gpt-4o")
 LLM_MESH_MODEL = "gpt-4o" #"gpt-3.5-turbo"
 
+# RRF constant (common value)
+RRF_K = 60
+
 # --- Functions ---
 
 def generate_mesh_terms(query: str, llm_client: OpenAI, model: str = LLM_MESH_MODEL) -> list[str]:
@@ -458,89 +461,198 @@ def semantic_rank_articles(query: str, pmids_to_rank: list[str], collection: chr
         print(f"Error querying ChromaDB: {e}")
         return []
 
-def main():
-    """Main function to run the enhanced hybrid search with persistence and MeSH term generation."""
-    user_query = input("Enter your medical query: ")
+def hybrid_rank_rrf(pubmed_ranked_pmids: list[str], semantic_ranked_results: list[tuple[str, float]], k: int = RRF_K) -> list[tuple[str, float]]:
+    """
+    Combines PubMed relevance rank and semantic similarity rank using Reciprocal Rank Fusion (RRF).
 
+    Args:
+        pubmed_ranked_pmids: List of PMIDs sorted by PubMed relevance.
+        semantic_ranked_results: List of (pmid, similarity_score) sorted by semantic similarity.
+        k: RRF weighting constant (default 60).
+
+    Returns:
+        List of (pmid, rrf_score) sorted by RRF score descending.
+    """
+    print(f"Performing Reciprocal Rank Fusion (k={k})...")
+    rrf_scores = {}
+
+    # Create rank dictionaries for fast lookup
+    pubmed_ranks = {pmid: rank + 1 for rank, pmid in enumerate(pubmed_ranked_pmids)}
+    # Create semantic ranks dict from the semantic results
+    semantic_ranks = {pmid: rank + 1 for rank, (pmid, _) in enumerate(semantic_ranked_results)}
+
+    # Get the union of all PMIDs that appear in either ranking
+    all_pmids = set(pubmed_ranked_pmids) | set(p[0] for p in semantic_ranked_results)
+
+    for pmid in all_pmids:
+        score = 0.0
+        # Add score based on PubMed rank
+        rank_pubmed = pubmed_ranks.get(pmid)
+        if rank_pubmed:
+            score += 1.0 / (k + rank_pubmed)
+
+        # Add score based on semantic rank
+        rank_semantic = semantic_ranks.get(pmid)
+        if rank_semantic:
+            score += 1.0 / (k + rank_semantic)
+
+        # Only include PMIDs that have at least one score
+        if score > 0:
+            rrf_scores[pmid] = score
+
+    # Sort PMIDs by RRF score descending
+    sorted_results = sorted(rrf_scores.items(), key=lambda item: item[1], reverse=True)
+
+    print(f"RRF calculation complete for {len(sorted_results)} articles.")
+    return sorted_results
+
+def main():
+    """Main function allowing selection of ranking modes."""
+    user_query = input("Enter your medical query: ")
     if not user_query:
         print("Query cannot be empty.")
         return
-        
-    # 0. Generate MeSH terms from the query using LLM
-    generated_mesh_terms = generate_mesh_terms(user_query, client) # Pass the initialized OpenAI client
 
-    # 1. Initial Keyword Search (potentially refined with MeSH terms)
-    initial_pmids = search_pubmed_keywords(user_query, mesh_terms=generated_mesh_terms)
-    if not initial_pmids:
-        print("No results found from initial PubMed keyword search (with/without MeSH refinement).")
+    # Get user choice for ranking mode
+    while True:
+        print("\nSelect Ranking Mode:")
+        print("  1: PubMed Relevance (Keyword/MeSH search order)")
+        print("  2: Semantic Similarity (Vector search ranking)")
+        print("  3: Hybrid (Reciprocal Rank Fusion of 1 & 2)")
+        mode_choice = input("Enter choice (1, 2, or 3): ")
+        if mode_choice == '1':
+            ranking_mode = "pubmed"
+            break
+        elif mode_choice == '2':
+            ranking_mode = "semantic"
+            break
+        elif mode_choice == '3':
+            ranking_mode = "hybrid"
+            break
+        else:
+            print("Invalid choice. Please enter 1, 2, or 3.")
+
+    print(f"\n--- Starting search with mode: {ranking_mode} ---")
+
+    # 0. Generate MeSH terms
+    generated_mesh_terms = generate_mesh_terms(user_query, client)
+
+    # 1. Initial Keyword Search (Get PubMed relevance-ranked PMIDs)
+    initial_pmids_ordered = search_pubmed_keywords(user_query, mesh_terms=generated_mesh_terms)
+    if not initial_pmids_ordered:
+        print("No results found from initial PubMed keyword search.")
         return
 
-    # 2. Ensure Articles are in Persistent DB (Fetch/Embed/Add if needed)
-    pmids_in_db = ensure_articles_in_db(initial_pmids, collection)
-
+    # 2. Ensure Articles are in DB (and get the subset available)
+    pmids_in_db = ensure_articles_in_db(initial_pmids_ordered, collection)
     if not pmids_in_db:
         print("Could not ensure any articles were available in the vector database.")
-        print("\n--- Initial Keyword Search PMIDs --- ")
-        for i, pmid in enumerate(initial_pmids[:TOP_K]):
-             print(f"{i+1}. PMID: {pmid}")
+        print("\n--- Initial Keyword Search PMIDs (Unable to process further) --- ")
+        for i, pmid in enumerate(initial_pmids_ordered[:TOP_K]):
+            print(f"{i+1}. PMID: {pmid}")
         return
 
-    # 3. Semantic Ranking within the available PMIDs
-    ranked_results = semantic_rank_articles(user_query, pmids_in_db, collection, TOP_K)
+    # Filter the original ordered list to only those available in DB for ranking consistency
+    pubmed_ranked_available_pmids = [pmid for pmid in initial_pmids_ordered if pmid in pmids_in_db]
+
+    # 3. Perform Ranking based on selected mode
+    final_ranked_results = [] # This will store list of (pmid, score) tuples
+
+    if ranking_mode == "pubmed":
+        print("Using PubMed relevance ranking...")
+        # Use the filtered, ordered list; score is the rank (1-based)
+        final_ranked_results = [(pmid, i+1) for i, pmid in enumerate(pubmed_ranked_available_pmids[:TOP_K])]
+        print(f"Displaying top {len(final_ranked_results)} results based on PubMed order.")
+
+    elif ranking_mode == "semantic":
+        print("Performing semantic ranking...")
+        # Use the existing semantic rank function on the available PMIDs
+        semantic_results = semantic_rank_articles(user_query, pmids_in_db, collection, TOP_K)
+        final_ranked_results = semantic_results # Already (pmid, similarity_score)
+        print(f"Displaying top {len(final_ranked_results)} results based on semantic similarity.")
+
+    elif ranking_mode == "hybrid":
+        print("Performing hybrid ranking (RRF)...")
+        # A. Get semantic scores for ALL available articles for RRF input
+        print(f"  Getting semantic scores for {len(pmids_in_db)} available articles...")
+        # Request scores for all available PMIDs
+        all_semantic_results = semantic_rank_articles(user_query, pmids_in_db, collection, len(pmids_in_db))
+
+        if not all_semantic_results:
+             print("  Warning: Failed to get semantic scores for RRF. Falling back to PubMed ranking.")
+             # Fallback to PubMed ranking if semantic scores couldn't be obtained
+             final_ranked_results = [(pmid, i+1) for i, pmid in enumerate(pubmed_ranked_available_pmids[:TOP_K])]
+        else:
+             # B. Perform RRF using the PubMed ordered list (filtered) and all semantic results
+             rrf_results = hybrid_rank_rrf(pubmed_ranked_available_pmids, all_semantic_results)
+             # C. Take Top K from RRF results
+             final_ranked_results = rrf_results[:TOP_K] # RRF returns (pmid, rrf_score)
+             print(f"Displaying top {len(final_ranked_results)} results based on hybrid RRF score.")
 
     # 4. Display Results
-    print(f"\n--- Top {len(ranked_results)} Semantic Search Results --- ")
-    if not ranked_results:
-        print("No articles found after semantic ranking.")
-        # Fallback: Show top PMIDs from keyword search that are in the DB but weren't ranked
-        print("\n--- Available Articles (from Keyword Search, Unranked) ---")
-        try:
-            fallback_data = collection.get(ids=pmids_in_db[:TOP_K], include=['metadatas'])
-            if fallback_data and fallback_data.get('ids'):
-                 for i, pmid in enumerate(fallback_data['ids']):
-                     meta = fallback_data['metadatas'][i] if fallback_data.get('metadatas') else {}
-                     title = meta.get('title', 'Title unavailable')
-                     pub_date = meta.get('pub_date', 'Date unavailable')
-                     print(f"{i+1}. PMID: {pmid} (Date: {pub_date}) - {title}")
-            else:
-                print("(Could not retrieve fallback metadata)")
-        except Exception as fallback_e:
-             print(f"(Error retrieving fallback metadata: {fallback_e})")
-
+    print(f"\n--- Top {len(final_ranked_results)} Results ({ranking_mode.capitalize()} Ranking) --- ")
+    if not final_ranked_results:
+        print("No articles found after selected ranking process.")
     else:
-        # Fetch full metadata for the top ranked results for display
-        top_pmids = [pmid for pmid, score in ranked_results]
-        try:
-            top_articles_data = collection.get(
-                ids=top_pmids,
-                include=['documents', 'metadatas'] # Get abstract (document) and other metadata
-            )
-            # Create a lookup dict for easier access
-            display_data = {pmid: {'metadata': top_articles_data['metadatas'][i],
-                                    'document': top_articles_data['documents'][i]} 
-                            for i, pmid in enumerate(top_articles_data['ids'])}
+        # Fetch full metadata for the final ranked results for display
+        top_pmids = [pmid for pmid, score in final_ranked_results]
+        display_data = {}
+        if top_pmids: # Proceed only if there are PMIDs to fetch
+            try:
+                top_articles_data = collection.get(
+                    ids=top_pmids,
+                    include=['documents', 'metadatas']
+                )
+                # Create a lookup dict, handling potential missing data robustly
+                if top_articles_data and top_articles_data.get('ids'):
+                    retrieved_metadatas = top_articles_data.get('metadatas', [])
+                    retrieved_documents = top_articles_data.get('documents', [])
+                    for i, pmid_retrieved in enumerate(top_articles_data['ids']):
+                         # Check if index exists for metadata and documents
+                         metadata = retrieved_metadatas[i] if i < len(retrieved_metadatas) else {}
+                         document = retrieved_documents[i] if i < len(retrieved_documents) else ''
+                         display_data[pmid_retrieved] = {'metadata': metadata, 'document': document}
 
-        except Exception as e:
-            print(f"Warning: Could not retrieve full metadata for display: {e}")
-            display_data = {}
+                if len(display_data) != len(top_pmids):
+                    print(f"Warning: Could not retrieve metadata for all {len(top_pmids)} ranked PMIDs. Retrieved {len(display_data)}.")
 
-        # Display ranked results with enriched data
-        for i, (pmid, score) in enumerate(ranked_results):
+            except Exception as e:
+                print(f"Warning: Could not retrieve full metadata for display: {e}")
+                # display_data remains empty or partially filled
+
+        # Display loop
+        for i, (pmid, score) in enumerate(final_ranked_results):
             article_info = display_data.get(pmid)
-            if article_info:
-                meta = article_info.get('metadata', {})
-                abstract = article_info.get('document', '')
-                title = meta.get('title', 'Title unavailable')
-                pub_date = meta.get('pub_date', 'Date unavailable')
-                journal = meta.get('journal', 'Journal unavailable')
-                authors = meta.get('authors', 'Authors unavailable').split(', ') # Split back from string
-                mesh = meta.get('mesh_headings', 'MeSH unavailable').split(', ') # Split back from string
-                abstract_snippet = abstract[:250] if abstract else ''
-            else:
-                # Fallback if metadata fetch failed for this specific PMID
-                title, pub_date, journal, authors, mesh, abstract_snippet = ('Data unavailable',) * 6
+            title, pub_date, journal, authors_str, mesh_str, abstract_snippet = ('Data unavailable',) * 6
+            abstract = ''
 
-            print(f"{i+1}. PMID: {pmid} (Score: {score:.4f}, Date: {pub_date})")
+            if article_info:
+                 meta = article_info.get('metadata', {})
+                 abstract = article_info.get('document', '')
+                 title = meta.get('title', 'Title unavailable')
+                 pub_date = meta.get('pub_date', 'Date unavailable')
+                 journal = meta.get('journal', 'Journal unavailable')
+                 authors_str = meta.get('authors', '') # Get as string
+                 mesh_str = meta.get('mesh_headings', '') # Get as string
+                 abstract_snippet = abstract[:250] if abstract else ''
+            else:
+                 # This case occurs if metadata fetch failed or was incomplete
+                 print(f"  (Metadata for PMID {pmid} could not be retrieved or was missing)")
+
+            # Process authors and mesh safely
+            authors = authors_str.split(', ') if authors_str else ['Authors unavailable']
+            mesh = mesh_str.split(', ') if mesh_str else ['MeSH unavailable']
+
+            # Format score display
+            score_display = ""
+            if ranking_mode == "semantic":
+                score_display = f"Score: {score:.4f}"
+            elif ranking_mode == "hybrid":
+                 score_display = f"RRF Score: {score:.4f}"
+            elif ranking_mode == "pubmed":
+                 score_display = f"Rank: {score}" # Score is the rank
+
+            print(f"{i+1}. PMID: {pmid} ({score_display}, Date: {pub_date})")
             print(f"   Title: {title}")
             print(f"   Journal: {journal}")
             if authors and authors[0]: print(f"   Authors: {(', '.join(authors[:3])) + (' et al.' if len(authors) > 3 else '')}")
