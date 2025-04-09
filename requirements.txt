@@ -3,4 +3,5 @@ biopython
 openai
 chromadb
 python-dotenv
-numpy 
+numpy
+pydantic 

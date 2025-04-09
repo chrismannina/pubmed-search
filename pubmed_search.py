@@ -6,6 +6,44 @@ import os
 from dotenv import load_dotenv
 import time
 import datetime
+from typing import List, Optional, Dict, Any # For Pydantic
+from pydantic import BaseModel, Field, HttpUrl # Import Pydantic
+
+# --- Pydantic Models ---
+
+class Author(BaseModel):
+    lastName: Optional[str] = None
+    foreName: Optional[str] = None
+    initials: Optional[str] = None
+    affiliation: Optional[str] = None # Store primary affiliation
+
+    def display_name(self) -> str:
+        parts = [self.foreName, self.lastName]
+        name = " ".join(p for p in parts if p)
+        return name if name else self.initials or "Unknown Author"
+
+class PubMedArticle(BaseModel):
+    pmid: str
+    doi: Optional[str] = None
+    title: Optional[str] = None
+    abstract: Optional[str] = None
+    authors: List[Author] = []
+    journalTitle: Optional[str] = None
+    journalISOAbbreviation: Optional[str] = None
+    volume: Optional[str] = None
+    issue: Optional[str] = None
+    pagination: Optional[str] = None
+    pubDate: Optional[str] = None # Storing as YYYY-MM-DD string
+    publicationTypes: List[str] = []
+    meshHeadings: List[str] = []
+    keywords: List[str] = []
+    language: Optional[str] = None
+    # Add other fields as needed, e.g., grant info, chemical list
+
+    # Property to generate PubMed URL
+    @property
+    def pubmed_url(self) -> HttpUrl:
+        return f"https://pubmed.ncbi.nlm.nih.gov/{self.pmid}/"
 
 # --- Configuration ---
 load_dotenv() # Load environment variables from .env file
@@ -197,19 +235,11 @@ def parse_pubmed_date(date_info: dict) -> str | None:
                 return f"{year:04d}-{month:02d}-01" # Default to 1st day
         return None # Could not parse
 
-def fetch_abstracts(pmids: list[str]) -> dict[str, dict[str, str | list[str] | None]]:
-    """Fetches details (title, abstract, date, authors, journal, MeSH) for PMIDs.
-
-    Args:
-        pmids: A list of PubMed IDs.
-
-    Returns:
-        A dictionary where keys are PMIDs and values are dictionaries
-        containing 'title', 'abstract', 'pub_date', 'authors', 'journal', 'mesh_headings'.
-    """
+def fetch_abstracts(pmids: list[str]) -> Dict[str, PubMedArticle]:
+    """Fetches full article details for a list of PMIDs and returns Pydantic models."""
     print(f"Fetching details for {len(pmids)} PMIDs...")
-    articles = {}
-    batch_size = 100 # Keep batch size reasonable for Entrez
+    articles: Dict[str, PubMedArticle] = {}
+    batch_size = 100
     for i in range(0, len(pmids), batch_size):
         batch_pmids = pmids[i:i + batch_size]
         print(f"  Fetching batch {i//batch_size + 1} ({len(batch_pmids)} PMIDs)...")
@@ -219,88 +249,135 @@ def fetch_abstracts(pmids: list[str]) -> dict[str, dict[str, str | list[str] | N
             handle.close()
 
             for record in records.get('PubmedArticle', []):
-                medline_citation = record.get('MedlineCitation', {})
-                if not medline_citation:
-                    continue
+                try:
+                    medline_citation = record.get('MedlineCitation', {})
+                    if not medline_citation:
+                        continue
+                    
+                    article_info = medline_citation.get('Article', {})
+                    journal_info = article_info.get('Journal', {})
+                    journal_issue = journal_info.get('JournalIssue', {})
+                    
+                    pmid = str(medline_citation.get('PMID'))
+                    
+                    # --- Basic Info --- 
+                    title = article_info.get('ArticleTitle', None)
+                    language = article_info.get('Language', [None])[0] # Takes first language
+                    pagination = article_info.get('Pagination', {}).get('MedlinePgn', None)
+                    
+                    # --- Abstract --- 
+                    abstract = None
+                    abstract_list = article_info.get('Abstract', {}).get('AbstractText', [])
+                    if isinstance(abstract_list, list):
+                        abstract = " ".join(str(a) for a in abstract_list) # Ensure all parts are strings
+                    elif abstract_list: # Handle case where it might be a single string directly
+                        abstract = str(abstract_list)
+                    if not abstract:
+                        other_abstract_list = article_info.get('OtherAbstract', [])
+                        if other_abstract_list and isinstance(other_abstract_list, list) and len(other_abstract_list) > 0:
+                            abstract_texts = other_abstract_list[0].get('AbstractText', [])
+                            if isinstance(abstract_texts, list):
+                                 abstract = " ".join(str(a) for a in abstract_texts)
+                            elif abstract_texts:
+                                 abstract = str(abstract_texts)
+                    
+                    # Skip article if no abstract found (required for embedding)
+                    if not abstract:
+                        print(f"  Warning: No abstract found for PMID: {pmid}. Skipping storage.")
+                        continue
 
-                pmid = str(medline_citation.get('PMID'))
-                article = medline_citation.get('Article', {})
-                title = article.get('ArticleTitle', 'No Title Available')
+                    # --- Date --- 
+                    pub_date_info = journal_issue.get('PubDate', {})
+                    pub_date = parse_pubmed_date(pub_date_info)
+                    
+                    # --- Journal --- 
+                    journal_title = journal_info.get('Title', None)
+                    journal_iso = journal_info.get('ISOAbbreviation', None)
+                    volume = journal_issue.get('Volume', None)
+                    issue = journal_issue.get('Issue', None)
+                    
+                    # --- Authors --- 
+                    authors_data = article_info.get('AuthorList', [])
+                    authors = []
+                    if isinstance(authors_data, list):
+                        for author_info in authors_data:
+                            # Get primary affiliation if available
+                            affiliation = None
+                            affil_list = author_info.get('AffiliationInfo', [])
+                            if affil_list and isinstance(affil_list, list):
+                                affiliation = affil_list[0].get('Affiliation', None)
+                                
+                            authors.append(Author(
+                                lastName=author_info.get('LastName'),
+                                foreName=author_info.get('ForeName'),
+                                initials=author_info.get('Initials'),
+                                affiliation=affiliation
+                            ))
+                            
+                    # --- Publication Types --- 
+                    pub_types_list = article_info.get('PublicationTypeList', [])
+                    pub_types = [str(pt) for pt in pub_types_list if pt] # Extract text content
+                    
+                    # --- MeSH Headings --- 
+                    mesh_list = medline_citation.get('MeshHeadingList', [])
+                    mesh_headings = []
+                    if isinstance(mesh_list, list):
+                        for mesh_item in mesh_list:
+                            descriptor = mesh_item.get('DescriptorName')
+                            if descriptor:
+                                mesh_headings.append(str(descriptor))
+                                
+                    # --- Keywords --- 
+                    keyword_list_data = medline_citation.get('KeywordList', [])
+                    keywords = []
+                    # Keywords can be nested, handle potential structure variations
+                    if isinstance(keyword_list_data, list) and len(keyword_list_data) > 0:
+                         # Often wrapped in another list by owner e.g., [[kw1, kw2]]
+                         actual_keywords = keyword_list_data[0] 
+                         if isinstance(actual_keywords, list):
+                             keywords = [str(kw).strip() for kw in actual_keywords if str(kw).strip()] 
 
-                # --- Extract Abstract ---
-                abstract_list = article.get('Abstract', {}).get('AbstractText', [])
-                if isinstance(abstract_list, list):
-                    abstract = " ".join(abstract_list)
-                else:
-                    abstract = str(abstract_list)
-                if not abstract:
-                    other_abstract_list = article.get('OtherAbstract', [])
-                    if other_abstract_list and isinstance(other_abstract_list, list) and len(other_abstract_list) > 0:
-                        abstract_texts = other_abstract_list[0].get('AbstractText', [])
-                        if isinstance(abstract_texts, list):
-                             abstract = " ".join(abstract_texts)
-                        else:
-                             abstract = str(abstract_texts)
+                    # --- DOI --- 
+                    doi = None
+                    article_ids = record.get('PubmedData', {}).get('ArticleIdList', [])
+                    if isinstance(article_ids, list):
+                         for article_id in article_ids:
+                              if hasattr(article_id, 'attributes') and article_id.attributes.get('IdType') == 'doi':
+                                   doi = str(article_id)
+                                   break # Found DOI
+
+                    # --- Create Pydantic Model Instance --- 
+                    article_model = PubMedArticle(
+                        pmid=pmid,
+                        doi=doi,
+                        title=title,
+                        abstract=abstract,
+                        authors=authors,
+                        journalTitle=journal_title,
+                        journalISOAbbreviation=journal_iso,
+                        volume=volume,
+                        issue=issue,
+                        pagination=pagination,
+                        pubDate=pub_date,
+                        publicationTypes=pub_types,
+                        meshHeadings=mesh_headings,
+                        keywords=keywords,
+                        language=language
+                    )
+                    articles[pmid] = article_model
                 
-                # Only proceed if we have an abstract, as it's needed for embedding
-                if not abstract:
-                    print(f"  Warning: No abstract found for PMID: {pmid}. Skipping storage.")
-                    continue
+                except Exception as parse_e:
+                     # Catch errors during parsing of a single record
+                     pmid_err = record.get('MedlineCitation', {}).get('PMID', 'UNKNOWN')
+                     print(f"  Error parsing record for PMID {pmid_err}: {parse_e}")
+                     continue # Skip this article
 
-                # --- Extract Date ---
-                journal_info = article.get('Journal', {})
-                pub_date_info = journal_info.get('JournalIssue', {}).get('PubDate', {})
-                pub_date = parse_pubmed_date(pub_date_info)
-
-                # --- Extract Journal Title ---
-                journal_title = journal_info.get('Title', 'No Journal Title')
-
-                # --- Extract Authors ---
-                author_list_data = article.get('AuthorList', [])
-                authors = []
-                if author_list_data and isinstance(author_list_data, list):
-                    for author_info in author_list_data:
-                        last_name = author_info.get('LastName')
-                        fore_name = author_info.get('ForeName')
-                        initials = author_info.get('Initials')
-                        name_parts = [n for n in [fore_name, last_name] if n] # Filter out None/empty
-                        if name_parts:
-                            authors.append(" ".join(name_parts))
-                        elif initials: # Fallback if only initials are present (rare)
-                             authors.append(f"{initials}.")
-
-                # --- Extract MeSH Headings ---
-                mesh_heading_list = medline_citation.get('MeshHeadingList', [])
-                mesh_headings = []
-                if mesh_heading_list and isinstance(mesh_heading_list, list):
-                    for mesh_item in mesh_heading_list:
-                        descriptor = mesh_item.get('DescriptorName')
-                        if descriptor:
-                            # Sometimes descriptor is an object with 'UI' and text content
-                            if hasattr(descriptor, 'attributes') and 'UI' in descriptor.attributes:
-                                mesh_headings.append(str(descriptor)) # Get the text content
-                            else:
-                                 mesh_headings.append(str(descriptor))
-
-
-                # --- Store Article ---
-                articles[pmid] = {
-                    'title': title,
-                    'abstract': abstract,
-                    'pub_date': pub_date,
-                    'journal': journal_title,
-                    'authors': authors, # List of strings
-                    'mesh_headings': mesh_headings # List of strings
-                }
-
-            # Be nice to NCBI servers
-            time.sleep(0.34) # NCBI recommends >= 3 requests/sec
+            time.sleep(0.34)
 
         except Exception as e:
-            print(f"Error fetching or parsing batch starting at index {i}: {e}")
-            # Optionally add more robust error handling / retries
+            print(f"Error fetching or processing batch starting at index {i}: {e}")
 
-    print(f"Successfully fetched details for {len(articles)} articles with abstracts.")
+    print(f"Successfully processed details for {len(articles)} articles with abstracts.")
     return articles
 
 def get_openai_embeddings(texts: list[str], model: str = OPENAI_EMBED_MODEL) -> list[list[float]]:
@@ -384,14 +461,23 @@ def ensure_articles_in_db(pmids_to_check: list[str], collection: chromadb.Collec
             metadatas = []
             for pmid in new_pmids: # Iterate through the filtered new_pmids
                 # Access original data using the valid pmid
-                article_data = new_articles_data[pmid] 
+                article_model: PubMedArticle = new_articles_data[pmid] 
+                # Prepare metadata dict for Chroma, converting lists and models
                 meta = {
-                    'title': article_data['title'],
-                    'pub_date': article_data['pub_date'],
-                    'journal': article_data['journal'],
-                    'authors': ", ".join(article_data.get('authors', [])),
-                    'mesh_headings': ", ".join(article_data.get('mesh_headings', []))
+                    'title': article_model.title,
+                    'pub_date': article_model.pubDate,
+                    'journal': article_model.journalTitle,
+                    # Convert Author models to display names string
+                    'authors': ", ".join(author.display_name() for author in article_model.authors),
+                    # Convert lists to comma-separated strings
+                    'mesh_headings': ", ".join(article_model.meshHeadings),
+                    'keywords': ", ".join(article_model.keywords),
+                    'publication_types': ", ".join(article_model.publicationTypes),
+                    'language': article_model.language,
+                    'doi': article_model.doi
+                    # Add other simple fields as needed
                 }
+                # Filter out None values before adding
                 metadatas.append({k: v for k, v in meta.items() if v is not None})
 
             print(f"Generating embeddings for {len(new_pmids)} new articles...")
@@ -721,8 +807,12 @@ def main():
         # Display loop
         for i, (pmid, score) in enumerate(final_ranked_results):
             article_info = display_data.get(pmid)
-            title, pub_date, journal, authors_str, mesh_str, abstract_snippet = ('Data unavailable',) * 6
-            abstract = ''
+            # Initialize all fields to avoid errors if metadata is missing
+            title, pub_date, journal, authors_str, mesh_str = ('Data unavailable',) * 5
+            keywords_str, pub_types_str, language, doi = ('Data unavailable',) * 4
+            abstract_snippet = ''
+            pubmed_url = f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/" # Default URL
+            doi_url = None
 
             if article_info:
                  meta = article_info.get('metadata', {})
@@ -730,15 +820,25 @@ def main():
                  title = meta.get('title', 'Title unavailable')
                  pub_date = meta.get('pub_date', 'Date unavailable')
                  journal = meta.get('journal', 'Journal unavailable')
-                 authors_str = meta.get('authors', '')
-                 mesh_str = meta.get('mesh_headings', '')
+                 authors_str = meta.get('authors', '') # Get as string
+                 mesh_str = meta.get('mesh_headings', '') # Get as string
+                 keywords_str = meta.get('keywords', '') # Get Keywords
+                 pub_types_str = meta.get('publication_types', '') # Get Pub Types
+                 language = meta.get('language', 'Lang unavailable') # Get Language
+                 doi = meta.get('doi', None) # Get DOI
                  abstract_snippet = abstract[:250] if abstract else ''
+                 if doi:
+                      doi_url = f"https://doi.org/{doi}"
             else:
                  print(f"  (Metadata for PMID {pmid} could not be retrieved or was missing)")
 
+            # Safely split comma-separated strings back into lists for display
             authors = authors_str.split(', ') if authors_str else ['Authors unavailable']
             mesh = mesh_str.split(', ') if mesh_str else ['MeSH unavailable']
+            keywords = keywords_str.split(', ') if keywords_str else []
+            pub_types = pub_types_str.split(', ') if pub_types_str else []
 
+            # Format score display
             score_display = ""
             if ranking_mode == "semantic":
                 score_display = f"Score: {score:.4f}"
@@ -747,13 +847,25 @@ def main():
             elif ranking_mode == "pubmed":
                  score_display = f"Rank: {score}"
 
-            print(f"{i+1}. PMID: {pmid} ({score_display}, Date: {pub_date})")
+            # Print results with new fields
+            print(f"{i+1}. PMID: {pmid} ({score_display}, Date: {pub_date}, Lang: {language})")
             print(f"   Title: {title}")
             print(f"   Journal: {journal}")
-            if authors and authors[0]: print(f"   Authors: {(', '.join(authors[:3])) + (' et al.' if len(authors) > 3 else '')}")
+            # Display authors only if the list is not ['Authors unavailable']
+            if authors != ['Authors unavailable']:
+                print(f"   Authors: {(', '.join(authors[:3])) + (' et al.' if len(authors) > 3 else '')}")
+            if pub_types:
+                 print(f"   Pub Types: {', '.join(pub_types)}")
             if abstract_snippet:
                 print(f"   Abstract: {abstract_snippet}...")
-            if mesh and mesh[0]: print(f"   MeSH: {(', '.join(mesh[:5])) + ('...' if len(mesh) > 5 else '')}")
+            # Display MeSH only if the list is not ['MeSH unavailable']
+            if mesh != ['MeSH unavailable']:
+                 print(f"   MeSH: {(', '.join(mesh[:5])) + ('...' if len(mesh) > 5 else '')}")
+            if keywords:
+                 print(f"   Keywords: {(', '.join(keywords[:5])) + ('...' if len(keywords) > 5 else '')}")
+            print(f"   PubMed URL: {pubmed_url}")
+            if doi_url:
+                 print(f"   DOI URL: {doi_url}")
             print()
 
 if __name__ == "__main__":
