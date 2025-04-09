@@ -24,6 +24,9 @@ client = OpenAI(api_key=openai_api_key)
 # Model for OpenAI embeddings
 OPENAI_EMBED_MODEL = "text-embedding-3-small"
 
+# Content to embed ('abstract' or 'title_abstract')
+EMBED_CONTENT_MODE = "title_abstract" # Defaulting to title + abstract
+
 # ChromaDB Client and Collection
 # Using a persistent client to save the DB to disk
 CHROMA_DB_PATH = "./chroma_db"
@@ -90,47 +93,61 @@ def generate_mesh_terms(query: str, llm_client: OpenAI, model: str = LLM_MESH_MO
         return [] # Return empty list on error
 
 def search_pubmed_keywords(query: str, mesh_terms: list[str] | None = None, max_results: int = MAX_KEYWORD_RESULTS) -> list[str]:
-    """Performs a keyword search on PubMed, optionally refined by MeSH terms."""
+    """Performs a keyword search on PubMed, prioritizing MeSH terms if available."""
     
-    # Construct the final PubMed query string
-    final_query = query # Start with the original query
+    final_query = ""
+    query_description = ""
     
     if mesh_terms:
-        # Add the MeSH terms using OR within the group, and AND with the original query
-        # Format: (original query) AND (term1[MeSH Terms] OR term2[MeSH Terms] ...)
-        mesh_query_part = " OR ".join([f"{term}[MeSH Terms]" for term in mesh_terms])
+        # Prioritize using only MeSH terms if available
+        # Format: (term1[MeSH Terms] OR term2[MeSH Terms] ...)
+        mesh_query_part = " OR ".join([f'\"{term}\"[MeSH Terms]' for term in mesh_terms])
         if mesh_query_part:
-             final_query = f"({query}) AND ({mesh_query_part})"
-        print(f"Refining keyword search with MeSH terms.")
+             final_query = mesh_query_part
+             query_description = "using generated MeSH terms"
+             print(f"Constructed PubMed query based on MeSH terms.")
+        else:
+             print("Warning: MeSH terms were provided but resulted in an empty query part. Falling back to original query.")
+             final_query = query
+             query_description = "using original query (MeSH generation failed)"
     else:
-        print("Performing keyword search without MeSH term refinement.")
+        # Fallback to original query if no MeSH terms generated
+        print("No MeSH terms generated or provided. Using original query text.")
+        final_query = query
+        query_description = "using original query"
 
-    print(f"Executing PubMed query: {final_query}")
+    print(f"Executing PubMed query ({query_description}): {final_query}")
     
     try:
         handle = Entrez.esearch(db="pubmed", term=final_query, retmax=str(max_results), sort="relevance")
         record = Entrez.read(handle)
         handle.close()
         pmids = record.get("IdList", [])
-        print(f"Found {len(pmids)} potential PMIDs using the refined query.")
+        print(f"Found {len(pmids)} potential PMIDs {query_description}.")
+        
+        # If MeSH query returned few/no results, optionally try original query as fallback?
+        # Let's keep it simple for now: trust the MeSH query if it was attempted.
+        # Adding a fallback here might re-introduce noise.
+        
         return pmids
     except Exception as e:
-        print(f"Error during PubMed keyword search: {e}")
-        # Fallback: If the complex query fails, maybe try the original query?
-        if mesh_terms: # Only fallback if we were using mesh terms
-             print(f"Refined query failed. Falling back to original query: {query}")
+        print(f"Error during PubMed keyword search ({query_description}): {e}")
+        # If the MeSH query failed, definitely try the original query as a fallback
+        if mesh_terms and final_query != query: # Check if we actually used MeSH
+             print(f"MeSH-based query failed. Falling back to original query: {query}")
              try:
                   handle = Entrez.esearch(db="pubmed", term=query, retmax=str(max_results), sort="relevance")
                   record = Entrez.read(handle)
                   handle.close()
                   pmids = record.get("IdList", [])
-                  print(f"Found {len(pmids)} potential PMIDs using fallback query.")
+                  print(f"Found {len(pmids)} potential PMIDs using fallback original query.")
                   return pmids
              except Exception as e2:
                   print(f"Error during fallback PubMed keyword search: {e2}")
                   return []
         else:
-            return [] # Original query already failed
+             # Original query failed, or MeSH query was same as original and failed
+             return []
 
 def parse_pubmed_date(date_info: dict) -> str | None:
     """Helper function to parse various PubMed date formats."""
@@ -334,21 +351,48 @@ def ensure_articles_in_db(pmids_to_check: list[str], collection: chromadb.Collec
 
         if new_articles_data:
             new_pmids = list(new_articles_data.keys())
-            documents = [new_articles_data[pmid]['abstract'] for pmid in new_pmids]
-            # Prepare metadata, ensuring complex fields are serializable (e.g., lists to strings)
-            metadatas = []
+            
+            # --- Prepare documents for embedding based on config ---
+            documents = []
+            print(f"Preparing documents for embedding using mode: {EMBED_CONTENT_MODE}")
             for pmid in new_pmids:
-                meta = {
-                    'title': new_articles_data[pmid]['title'],
-                    'pub_date': new_articles_data[pmid]['pub_date'],
-                    'journal': new_articles_data[pmid]['journal'],
-                    # Convert lists to comma-separated strings for Chroma metadata
-                    'authors': ", ".join(new_articles_data[pmid].get('authors', [])),
-                    'mesh_headings': ", ".join(new_articles_data[pmid].get('mesh_headings', []))
-                }
-                 # Filter out None values before adding
-                metadatas.append({k: v for k, v in meta.items() if v is not None})
+                title = new_articles_data[pmid].get('title', '')
+                abstract = new_articles_data[pmid].get('abstract', '')
+                if EMBED_CONTENT_MODE == "title_abstract":
+                    # Combine title and abstract, ensuring space if both exist
+                    doc_text = f"{title}. {abstract}".strip()
+                    documents.append(doc_text if doc_text != "." else "") # Handle empty title/abstract case
+                else: # Default to abstract only
+                    documents.append(abstract if abstract else "") # Handle empty abstract
 
+            # Filter out articles where the document text ended up empty
+            valid_indices = [i for i, doc in enumerate(documents) if doc]
+            if len(valid_indices) < len(new_pmids):
+                print(f"  Warning: Skipping {len(new_pmids) - len(valid_indices)} articles with empty content for embedding.")
+            
+            # Keep only data corresponding to valid documents
+            new_pmids = [new_pmids[i] for i in valid_indices]
+            documents = [documents[i] for i in valid_indices]
+            if not new_pmids: # Check if any valid articles remain
+                 print("No valid articles remain after filtering empty content.")
+                 # We still need to return the existing IDs confirmed earlier
+                 confirmed_available_ids = list(existing_ids)
+                 final_available_pmids = [pmid for pmid in pmids_to_check if pmid in confirmed_available_ids]
+                 return final_available_pmids
+
+            # --- Prepare metadata (only for valid articles) ---
+            metadatas = []
+            for pmid in new_pmids: # Iterate through the filtered new_pmids
+                # Access original data using the valid pmid
+                article_data = new_articles_data[pmid] 
+                meta = {
+                    'title': article_data['title'],
+                    'pub_date': article_data['pub_date'],
+                    'journal': article_data['journal'],
+                    'authors': ", ".join(article_data.get('authors', [])),
+                    'mesh_headings': ", ".join(article_data.get('mesh_headings', []))
+                }
+                metadatas.append({k: v for k, v in meta.items() if v is not None})
 
             print(f"Generating embeddings for {len(new_pmids)} new articles...")
             new_embeddings = get_openai_embeddings(documents)
@@ -359,7 +403,7 @@ def ensure_articles_in_db(pmids_to_check: list[str], collection: chromadb.Collec
                     collection.add(
                         embeddings=new_embeddings,
                         metadatas=metadatas,
-                        documents=documents,
+                        documents=documents, # Store the combined text if title_abstract mode
                         ids=new_pmids
                     )
                     newly_added_ids.update(new_pmids)
@@ -372,10 +416,8 @@ def ensure_articles_in_db(pmids_to_check: list[str], collection: chromadb.Collec
     else:
         print("No new PMIDs to fetch.")
 
-    # Return the list of PMIDs from the original check list that are now confirmed available
+    # Return the list of PMIDs confirmed available (original + newly added)
     confirmed_available_ids = list(existing_ids.union(newly_added_ids))
-    # Filter this list to only include PMIDs that were in the original pmid_to_check list
-    # This handles cases where fetching might fail for some requested IDs
     final_available_pmids = [pmid for pmid in pmids_to_check if pmid in confirmed_available_ids]
 
     print(f"{len(final_available_pmids)} PMIDs are now available in ChromaDB for ranking.")
@@ -418,19 +460,25 @@ def semantic_rank_articles(query: str, pmids_to_rank: list[str], collection: chr
             print(f"Debug: Length of first embedding vector: {len(query_embedding_list[0])}")
     # --- END DEBUG ---
 
-    # Ensure n_results doesn't exceed the number of PMIDs we are ranking
-    num_results_to_request = min(top_k, len(pmids_to_rank))
+    # The number of results to fetch depends on the context:
+    # - If called for final display (top_k is small), limit results.
+    # - If called for RRF (top_k is large, == len(pmids_to_rank)), fetch all.
+    # We query slightly more than needed and filter client-side.
+    num_results_to_request_query = min(len(pmids_to_rank), max(top_k * 2, 50))
+    # However, if top_k *is* len(pmids_to_rank), we need to ensure we query at least that many
+    if top_k == len(pmids_to_rank):
+         num_results_to_request_query = max(num_results_to_request_query, top_k)
 
-    print(f"Querying ChromaDB within {len(pmids_to_rank)} PMIDs for top {num_results_to_request} results...")
+    # The number of results we ultimately return
+    num_results_to_return = top_k 
+
+    print(f"Querying ChromaDB (requesting up to {num_results_to_request_query}) within {len(pmids_to_rank)} PMIDs to return top {num_results_to_return}...")
     try:
         # Use collection.query, specifying the query embedding.
         # Query broadly and filter client-side.
         results = collection.query(
             query_embeddings=query_embedding_list, # Pass the list containing one embedding
-            # Removed redundant n_results=num_results_to_request
-            # Removed where clause as we filter based on pmids_to_rank set later
-            # Query slightly more than top_k globally to increase chances of getting relevant PMIDs.
-            n_results=min(len(pmids_to_rank), max(top_k * 2, 50)),
+            n_results=num_results_to_request_query, # Use the calculated limit
             include=['distances'] # Only need distances for ranking
         )
 
@@ -451,8 +499,8 @@ def semantic_rank_articles(query: str, pmids_to_rank: list[str], collection: chr
             # Sort the filtered results by score descending
             ranked_results.sort(key=lambda x: x[1], reverse=True)
 
-            # Return the top_k from the filtered and sorted list
-            return ranked_results[:top_k]
+            # Return the top_k (num_results_to_return) from the filtered and sorted list
+            return ranked_results[:num_results_to_return]
         else:
             print("Warning: ChromaDB query returned unexpected or empty results.")
             return []
@@ -507,7 +555,7 @@ def hybrid_rank_rrf(pubmed_ranked_pmids: list[str], semantic_ranked_results: lis
     return sorted_results
 
 def main():
-    """Main function allowing selection of ranking modes."""
+    """Main function allowing selection of ranking modes and pre-ranking date filter."""
     user_query = input("Enter your medical query: ")
     if not user_query:
         print("Query cannot be empty.")
@@ -552,73 +600,123 @@ def main():
             print(f"{i+1}. PMID: {pmid}")
         return
 
-    # Filter the original ordered list to only those available in DB for ranking consistency
-    pubmed_ranked_available_pmids = [pmid for pmid in initial_pmids_ordered if pmid in pmids_in_db]
+    # --- Optional Pre-Ranking Date Filter ---
+    eligible_pmids_for_ranking = pmids_in_db # Default to all available PMIDs
+    apply_date_filter = input("Apply a date filter BEFORE ranking (e.g., only rank articles from a certain year onwards)? (y/n): ").lower()
+    
+    if apply_date_filter == 'y':
+        while True:
+            try:
+                min_year_str = input(f"Enter the minimum publication year for ranking (e.g., {datetime.datetime.now().year - 5}): ")
+                min_year = int(min_year_str)
+                if 1900 < min_year <= datetime.datetime.now().year:
+                    break
+                else:
+                    print("Please enter a reasonable year.")
+            except ValueError:
+                print("Invalid input. Please enter a year as a number.")
+        
+        print(f"Fetching metadata for date filtering {len(pmids_in_db)} articles...")
+        metadata_for_filtering = {}
+        try:
+            filter_data = collection.get(ids=pmids_in_db, include=['metadatas'])
+            if filter_data and filter_data.get('ids'):
+                 for i, pmid in enumerate(filter_data['ids']):
+                     meta = filter_data['metadatas'][i] if i < len(filter_data.get('metadatas', [])) else {}
+                     metadata_for_filtering[pmid] = meta
+        except Exception as e:
+            print(f"Warning: Could not retrieve metadata for date filtering: {e}. Proceeding without date filter.")
+            # Keep eligible_pmids_for_ranking as pmids_in_db if metadata fetch fails
+        
+        if metadata_for_filtering: # Proceed only if metadata was fetched
+             print(f"Applying date filter: Keeping articles from year {min_year} onwards for ranking...")
+             temp_eligible_pmids = []
+             for pmid in pmids_in_db:
+                 meta = metadata_for_filtering.get(pmid)
+                 keep_article = True # Default to keeping if date is missing/invalid
+                 if meta:
+                     pub_date_str = meta.get('pub_date') # Expecting YYYY-MM-DD
+                     if pub_date_str:
+                         try:
+                             article_year = int(pub_date_str.split('-')[0])
+                             if article_year < min_year:
+                                 keep_article = False
+                         except (IndexError, ValueError):
+                              pass # Keep if date format is invalid
+                 if keep_article:
+                     temp_eligible_pmids.append(pmid)
+             
+             eligible_pmids_for_ranking = temp_eligible_pmids
+             print(f"Date filter applied. {len(eligible_pmids_for_ranking)} articles eligible for ranking.")
 
-    # 3. Perform Ranking based on selected mode
+    if not eligible_pmids_for_ranking:
+         print("No articles match the date filter criteria.")
+         return
+
+    # Filter the original ordered list to only those eligible for ranking
+    pubmed_ranked_eligible_pmids = [pmid for pmid in initial_pmids_ordered if pmid in eligible_pmids_for_ranking]
+
+    # 3. Perform Ranking based on selected mode using the eligible PMIDs
     final_ranked_results = [] # This will store list of (pmid, score) tuples
 
     if ranking_mode == "pubmed":
-        print("Using PubMed relevance ranking...")
+        print(f"Using PubMed relevance ranking on {len(pubmed_ranked_eligible_pmids)} eligible articles...")
         # Use the filtered, ordered list; score is the rank (1-based)
-        final_ranked_results = [(pmid, i+1) for i, pmid in enumerate(pubmed_ranked_available_pmids[:TOP_K])]
+        final_ranked_results = [(pmid, i+1) for i, pmid in enumerate(pubmed_ranked_eligible_pmids[:TOP_K])]
         print(f"Displaying top {len(final_ranked_results)} results based on PubMed order.")
 
     elif ranking_mode == "semantic":
-        print("Performing semantic ranking...")
-        # Use the existing semantic rank function on the available PMIDs
-        semantic_results = semantic_rank_articles(user_query, pmids_in_db, collection, TOP_K)
+        print(f"Performing semantic ranking on {len(eligible_pmids_for_ranking)} eligible articles...")
+        # Pass the eligible list to the semantic rank function
+        semantic_results = semantic_rank_articles(user_query, eligible_pmids_for_ranking, collection, TOP_K)
         final_ranked_results = semantic_results # Already (pmid, similarity_score)
         print(f"Displaying top {len(final_ranked_results)} results based on semantic similarity.")
 
     elif ranking_mode == "hybrid":
-        print("Performing hybrid ranking (RRF)...")
-        # A. Get semantic scores for ALL available articles for RRF input
-        print(f"  Getting semantic scores for {len(pmids_in_db)} available articles...")
-        # Request scores for all available PMIDs
-        all_semantic_results = semantic_rank_articles(user_query, pmids_in_db, collection, len(pmids_in_db))
+        print(f"Performing hybrid ranking (RRF) on {len(eligible_pmids_for_ranking)} eligible articles...")
+        # A. Get semantic scores for ALL eligible articles for RRF input
+        print(f"  Getting semantic scores for {len(eligible_pmids_for_ranking)} eligible articles...")
+        all_semantic_results = semantic_rank_articles(user_query, eligible_pmids_for_ranking, collection, len(eligible_pmids_for_ranking))
 
         if not all_semantic_results:
              print("  Warning: Failed to get semantic scores for RRF. Falling back to PubMed ranking.")
-             # Fallback to PubMed ranking if semantic scores couldn't be obtained
-             final_ranked_results = [(pmid, i+1) for i, pmid in enumerate(pubmed_ranked_available_pmids[:TOP_K])]
+             # Fallback to PubMed ranking using the eligible list
+             final_ranked_results = [(pmid, i+1) for i, pmid in enumerate(pubmed_ranked_eligible_pmids[:TOP_K])]
         else:
-             # B. Perform RRF using the PubMed ordered list (filtered) and all semantic results
-             rrf_results = hybrid_rank_rrf(pubmed_ranked_available_pmids, all_semantic_results)
+             # B. Perform RRF using the PubMed ordered eligible list and all semantic results
+             rrf_results = hybrid_rank_rrf(pubmed_ranked_eligible_pmids, all_semantic_results)
              # C. Take Top K from RRF results
              final_ranked_results = rrf_results[:TOP_K] # RRF returns (pmid, rrf_score)
              print(f"Displaying top {len(final_ranked_results)} results based on hybrid RRF score.")
 
-    # 4. Display Results
+    # 4. Display Results (using the final ranked list)
     print(f"\n--- Top {len(final_ranked_results)} Results ({ranking_mode.capitalize()} Ranking) --- ")
     if not final_ranked_results:
-        print("No articles found after selected ranking process.")
+        print("No articles found after ranking.")
+        # Fallback logic already handled if pmids_in_db is empty or ranking fails
     else:
         # Fetch full metadata for the final ranked results for display
         top_pmids = [pmid for pmid, score in final_ranked_results]
         display_data = {}
-        if top_pmids: # Proceed only if there are PMIDs to fetch
-            try:
-                top_articles_data = collection.get(
-                    ids=top_pmids,
-                    include=['documents', 'metadatas']
-                )
-                # Create a lookup dict, handling potential missing data robustly
-                if top_articles_data and top_articles_data.get('ids'):
-                    retrieved_metadatas = top_articles_data.get('metadatas', [])
-                    retrieved_documents = top_articles_data.get('documents', [])
-                    for i, pmid_retrieved in enumerate(top_articles_data['ids']):
-                         # Check if index exists for metadata and documents
-                         metadata = retrieved_metadatas[i] if i < len(retrieved_metadatas) else {}
-                         document = retrieved_documents[i] if i < len(retrieved_documents) else ''
-                         display_data[pmid_retrieved] = {'metadata': metadata, 'document': document}
+        if top_pmids:
+             try:
+                 top_articles_data = collection.get(
+                     ids=top_pmids,
+                     include=['documents', 'metadatas']
+                 )
+                 if top_articles_data and top_articles_data.get('ids'):
+                     retrieved_metadatas = top_articles_data.get('metadatas', [])
+                     retrieved_documents = top_articles_data.get('documents', [])
+                     for i, pmid_retrieved in enumerate(top_articles_data['ids']):
+                          metadata = retrieved_metadatas[i] if i < len(retrieved_metadatas) else {}
+                          document = retrieved_documents[i] if i < len(retrieved_documents) else ''
+                          display_data[pmid_retrieved] = {'metadata': metadata, 'document': document}
 
-                if len(display_data) != len(top_pmids):
-                    print(f"Warning: Could not retrieve metadata for all {len(top_pmids)} ranked PMIDs. Retrieved {len(display_data)}.")
+                 if len(display_data) != len(top_pmids):
+                     print(f"Warning: Could not retrieve metadata for all {len(top_pmids)} ranked PMIDs. Retrieved {len(display_data)}.")
 
-            except Exception as e:
-                print(f"Warning: Could not retrieve full metadata for display: {e}")
-                # display_data remains empty or partially filled
+             except Exception as e:
+                 print(f"Warning: Could not retrieve full metadata for display: {e}")
 
         # Display loop
         for i, (pmid, score) in enumerate(final_ranked_results):
@@ -632,25 +730,22 @@ def main():
                  title = meta.get('title', 'Title unavailable')
                  pub_date = meta.get('pub_date', 'Date unavailable')
                  journal = meta.get('journal', 'Journal unavailable')
-                 authors_str = meta.get('authors', '') # Get as string
-                 mesh_str = meta.get('mesh_headings', '') # Get as string
+                 authors_str = meta.get('authors', '')
+                 mesh_str = meta.get('mesh_headings', '')
                  abstract_snippet = abstract[:250] if abstract else ''
             else:
-                 # This case occurs if metadata fetch failed or was incomplete
                  print(f"  (Metadata for PMID {pmid} could not be retrieved or was missing)")
 
-            # Process authors and mesh safely
             authors = authors_str.split(', ') if authors_str else ['Authors unavailable']
             mesh = mesh_str.split(', ') if mesh_str else ['MeSH unavailable']
 
-            # Format score display
             score_display = ""
             if ranking_mode == "semantic":
                 score_display = f"Score: {score:.4f}"
             elif ranking_mode == "hybrid":
                  score_display = f"RRF Score: {score:.4f}"
             elif ranking_mode == "pubmed":
-                 score_display = f"Rank: {score}" # Score is the rank
+                 score_display = f"Rank: {score}"
 
             print(f"{i+1}. PMID: {pmid} ({score_display}, Date: {pub_date})")
             print(f"   Title: {title}")
