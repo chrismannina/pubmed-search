@@ -4,4 +4,6 @@ openai
 chromadb
 python-dotenv
 numpy
-pydantic 
+pydantic
+fastapi
+uvicorn[standard] 
