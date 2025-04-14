@@ -1,5 +1,6 @@
 import os
 import datetime
+import time
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 from pydantic import HttpUrl
@@ -35,14 +36,14 @@ chroma_collection: Optional[chromadb.Collection] = None
 # --- API Request/Response Models --- 
 # (Keep the models defined earlier: SearchRequest, AuthorAPI, SearchResultItem, SearchResponse)
 class SearchRequest(BaseModel):
-    query: str = Field(..., description=\"The user's natural language search query.\")
-    ranking_mode: Literal[\"pubmed\", \"semantic\", \"hybrid\"] = Field(default=\"hybrid\", description=\"The ranking strategy to use.\")
-    min_year: Optional[int] = Field(default=None, description=\"Optional minimum publication year to filter results before ranking.\")
-    top_k: int = Field(default=10, gt=0, le=50, description=\"Number of top results to return.\")
-    max_pubmed_results: int = Field(default=100, gt=0, le=500, description=\"Maximum results from initial PubMed search.\")
+    query: str = Field(..., description="The user's natural language search query.")
+    ranking_mode: Literal["pubmed", "semantic", "hybrid"] = Field(default="hybrid", description="The ranking strategy to use.")
+    min_year: Optional[int] = Field(default=None, description="Optional minimum publication year to filter results before ranking.")
+    top_k: int = Field(default=10, gt=0, le=50, description="Number of top results to return.")
+    max_pubmed_results: int = Field(default=100, gt=0, le=500, description="Maximum results from initial PubMed search.")
     # Allow overriding certain configs per request
-    llm_mesh_model: Optional[str] = Field(default=None, description=\"Override LLM model for MeSH generation.\")
-    embed_content_mode: Optional[Literal[\"abstract\", \"title_abstract\"]] = Field(default=None, description=\"Override content embedding mode.\")
+    llm_mesh_model: Optional[str] = Field(default=None, description="Override LLM model for MeSH generation.")
+    embed_content_mode: Optional[Literal["abstract", "title_abstract"]] = Field(default=None, description="Override content embedding mode.")
 
 class AuthorAPI(BaseModel):
     lastName: Optional[str] = None
@@ -81,70 +82,70 @@ class SearchResponse(BaseModel):
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: Load config and initialize clients
-    print(\"API Starting up...\")
+    print("API Starting up...")
     global config, openai_client, chroma_client, chroma_collection
     
     load_dotenv()
-    config['NCBI_EMAIL'] = os.getenv(\"NCBI_EMAIL\", \"your.email@example.com\")
-    config['OPENAI_API_KEY'] = os.getenv(\"OPENAI_API_KEY\")
-    config['CHROMA_DB_PATH'] = \"./chroma_db\"
-    config['COLLECTION_NAME'] = \"pubmed_articles_openai\"
+    config['NCBI_EMAIL'] = os.getenv("NCBI_EMAIL", "your.email@example.com")
+    config['OPENAI_API_KEY'] = os.getenv("OPENAI_API_KEY")
+    config['CHROMA_DB_PATH'] = "./chroma_db"
+    config['COLLECTION_NAME'] = "pubmed_articles_openai"
     config['LLM_MESH_MODEL'] = DEFAULT_LLM_MESH_MODEL
     config['EMBED_CONTENT_MODE'] = DEFAULT_EMBED_CONTENT_MODE
     config['OPENAI_EMBED_MODEL'] = OPENAI_EMBED_MODEL
 
     if not config['OPENAI_API_KEY']:
-        raise ValueError(\"OPENAI_API_KEY not found in environment variables.\")
-    if config['NCBI_EMAIL'] == \"your.email@example.com\":
-        print(\"Warning: Using default NCBI email. Set NCBI_EMAIL in .env\")
+        raise ValueError("OPENAI_API_KEY not found in environment variables.")
+    if config['NCBI_EMAIL'] == "your.email@example.com":
+        print("Warning: Using default NCBI email. Set NCBI_EMAIL in .env")
 
-    print(\"Initializing OpenAI client...\")
+    print("Initializing OpenAI client...")
     openai_client = OpenAI(api_key=config['OPENAI_API_KEY'])
     
-    print(f\"Initializing persistent ChromaDB client at: {config['CHROMA_DB_PATH']}\")
+    print(f"Initializing persistent ChromaDB client at: {config['CHROMA_DB_PATH']}")
     chroma_client = chromadb.PersistentClient(path=config['CHROMA_DB_PATH'])
     
-    print(f\"Getting or creating ChromaDB collection: {config['COLLECTION_NAME']}\")
+    print(f"Getting or creating ChromaDB collection: {config['COLLECTION_NAME']}")
     try:
         chroma_collection = chroma_client.get_or_create_collection(
             name=config['COLLECTION_NAME'],
-            metadata={\"hnsw:space\": \"cosine\"}
+            metadata={"hnsw:space": "cosine"}
         )
-        print(\"ChromaDB collection ready.\")
+        print("ChromaDB collection ready.")
     except Exception as e:
-        print(f\"FATAL: Could not initialize ChromaDB collection: {e}\")
+        print(f"FATAL: Could not initialize ChromaDB collection: {e}")
         # Decide how to handle - maybe raise error to stop API?
-        raise RuntimeError(\"ChromaDB initialization failed\") from e
+        raise RuntimeError("ChromaDB initialization failed") from e
 
-    print(\"API Startup complete.\")
+    print("API Startup complete.")
     yield
     # Shutdown: Cleanup (if necessary)
-    print(\"API Shutting down...\")
+    print("API Shutting down...")
 
 
 # --- FastAPI Application Setup --- 
 app = FastAPI(
-    title=\"PubMed Semantic Search API\",
-    description=\"API for performing MeSH-refined semantic search on PubMed articles.\",
-    version=\"0.1.0\",
+    title="PubMed Semantic Search API",
+    description="API for performing MeSH-refined semantic search on PubMed articles.",
+    version="0.1.0",
     lifespan=lifespan # Add lifespan manager
 )
 
 # --- API Endpoints ---
 
-@app.get(\"/\", include_in_schema=False)
+@app.get("/", include_in_schema=False)
 async def root():
-    return {\"message\": \"PubMed Search API is running.\"}
+    return {"message": "PubMed Search API is running."}
 
-@app.post(\"/search\", response_model=SearchResponse)
+@app.post("/search", response_model=SearchResponse)
 async def perform_search(request: SearchRequest):
-    \"\"\"Performs MeSH-refined PubMed search with semantic/hybrid ranking.\"\"\"
+    """Performs MeSH-refined PubMed search with semantic/hybrid ranking."""
     start_time = time.time()
-    print(f"Received search request: Query='{request.query}', Mode='{request.ranking_mode}', Year>='{request.min_year}', K='{request.top_k}')
+    print(f"Received search request: Query='{request.query}', Mode='{request.ranking_mode}', Year>='{request.min_year}', K='{request.top_k}'")
 
     # Ensure clients are initialized (should be by lifespan)
     if not openai_client or not chroma_collection:
-        raise HTTPException(status_code=500, detail=\"API clients not initialized.\")
+        raise HTTPException(status_code=500, detail="API clients not initialized.")
 
     # Get config overrides or defaults
     llm_mesh_model = request.llm_mesh_model or config['LLM_MESH_MODEL']
@@ -191,7 +192,7 @@ async def perform_search(request: SearchRequest):
     # 3. Optional Pre-Ranking Date Filter
     eligible_pmids_for_ranking = pmids_in_db
     if request.min_year:
-        print(f\"Applying pre-ranking date filter: Year >= {request.min_year}\")
+        print(f"Applying pre-ranking date filter: Year >= {request.min_year}")
         # Fetch metadata needed for filtering
         metadata_for_filtering = {}
         try:
@@ -201,7 +202,7 @@ async def perform_search(request: SearchRequest):
                      meta = filter_data['metadatas'][i] if i < len(filter_data.get('metadatas', [])) else {}
                      metadata_for_filtering[pmid] = meta
         except Exception as e:
-            print(f\"Warning: Could not retrieve metadata for date filtering: {e}. Filter skipped.\")
+            print(f"Warning: Could not retrieve metadata for date filtering: {e}. Filter skipped.")
         
         if metadata_for_filtering:
              temp_eligible_pmids = []
@@ -216,7 +217,7 @@ async def perform_search(request: SearchRequest):
                      except: pass
                  if keep: temp_eligible_pmids.append(pmid)
              eligible_pmids_for_ranking = temp_eligible_pmids
-             print(f\"{len(eligible_pmids_for_ranking)} articles meet date criteria.\")
+             print(f"{len(eligible_pmids_for_ranking)} articles meet date criteria.")
 
     if not eligible_pmids_for_ranking:
         return SearchResponse(
@@ -231,24 +232,24 @@ async def perform_search(request: SearchRequest):
     # 4. Perform Ranking
     final_ranked_pmid_scores = [] # List of (pmid, score)
     
-    if request.ranking_mode == \"pubmed\":
-        print(f\"Using PubMed relevance ranking on {len(pubmed_ranked_eligible_pmids)} eligible articles...\")
+    if request.ranking_mode == "pubmed":
+        print(f"Using PubMed relevance ranking on {len(pubmed_ranked_eligible_pmids)} eligible articles...")
         final_ranked_pmid_scores = [(pmid, i+1.0) for i, pmid in enumerate(pubmed_ranked_eligible_pmids[:request.top_k])]
     
-    elif request.ranking_mode == \"semantic\":
-        print(f\"Performing semantic ranking on {len(eligible_pmids_for_ranking)} eligible articles...\")
+    elif request.ranking_mode == "semantic":
+        print(f"Performing semantic ranking on {len(eligible_pmids_for_ranking)} eligible articles...")
         final_ranked_pmid_scores = semantic_rank_articles(
             request.query, eligible_pmids_for_ranking, chroma_collection, request.top_k, openai_client, embed_model
         )
     
-    elif request.ranking_mode == \"hybrid\":
-        print(f\"Performing hybrid ranking (RRF) on {len(eligible_pmids_for_ranking)} eligible articles...\")
-        print(f\"  Getting semantic scores for {len(eligible_pmids_for_ranking)} articles...\")
+    elif request.ranking_mode == "hybrid":
+        print(f"Performing hybrid ranking (RRF) on {len(eligible_pmids_for_ranking)} eligible articles...")
+        print(f"  Getting semantic scores for {len(eligible_pmids_for_ranking)} articles...")
         all_semantic_results = semantic_rank_articles(
             request.query, eligible_pmids_for_ranking, chroma_collection, len(eligible_pmids_for_ranking), openai_client, embed_model
         )
         if not all_semantic_results:
-             print(\"  Warning: Failed to get semantic scores for RRF. Falling back to PubMed ranking.\")
+             print("  Warning: Failed to get semantic scores for RRF. Falling back to PubMed ranking.")
              final_ranked_pmid_scores = [(pmid, i+1.0) for i, pmid in enumerate(pubmed_ranked_eligible_pmids[:request.top_k])]
         else:
              rrf_results = hybrid_rank_rrf(pubmed_ranked_eligible_pmids, all_semantic_results)
@@ -269,7 +270,7 @@ async def perform_search(request: SearchRequest):
                      document = retrieved_documents[i] if i < len(retrieved_documents) else ''
                      display_data[pmid_retrieved] = {'metadata': metadata, 'document': document}
         except Exception as e:
-            print(f\"Warning: Could not retrieve full metadata for display: {e}\")
+            print(f"Warning: Could not retrieve full metadata for display: {e}")
 
     # Format final response items
     for rank, (pmid, score) in enumerate(final_ranked_pmid_scores):
@@ -284,7 +285,7 @@ async def perform_search(request: SearchRequest):
         ]
         
         doi = meta.get('doi')
-        doi_url_str = f\"https://doi.org/{doi}\" if doi else None
+        doi_url_str = f"https://doi.org/{doi}" if doi else None
         
         item = SearchResultItem(
             pmid=pmid,
@@ -300,7 +301,7 @@ async def perform_search(request: SearchRequest):
             keywords=meta.get('keywords', '').split(', ') if meta.get('keywords') else [],
             language=meta.get('language'),
             doi=doi,
-            pubmed_url=f\"https://pubmed.ncbi.nlm.nih.gov/{pmid}/\",
+            pubmed_url=f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/",
             doi_url=doi_url_str
         )
         search_result_items.append(item)
@@ -319,6 +320,6 @@ async def perform_search(request: SearchRequest):
     )
 
 # --- Placeholder for main execution (if needed for direct run - usually done via uvicorn) ---
-# if __name__ == \"__main__\":
+# if __name__ == "__main__":
 #     import uvicorn
-#     uvicorn.run(app, host=\"0.0.0.0\", port=8000) 
+#     uvicorn.run(app, host="0.0.0.0", port=8000) 

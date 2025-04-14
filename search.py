@@ -48,6 +48,7 @@ DEFAULT_MAX_KEYWORD_RESULTS = 100
 DEFAULT_TOP_K = 10
 DEFAULT_LLM_MESH_MODEL = "gpt-4o"
 DEFAULT_EMBED_CONTENT_MODE = "title_abstract"
+OPENAI_EMBED_MODEL = "text-embedding-3-small" # Define the constant here
 RRF_K = 60
 
 # --- Core Functions ---
@@ -163,20 +164,25 @@ def search_pubmed_keywords(query: str, mesh_terms: list[str] | None, max_results
 
 def parse_pubmed_date(date_info: dict) -> str | None:
     """Helper function to parse various PubMed date formats."""
+    # Define month_map outside the try block
+    month_map = { 'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun': 6,
+                  'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12 }
     try:
         year = int(date_info.get('Year'))
         month_str = date_info.get('Month')
         day_str = date_info.get('Day')
 
         # Attempt to convert month string/number to number
-        month_map = { 'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun': 6,
-                      'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12 }
+        month = 1 # Default to January
         if month_str in month_map:
             month = month_map[month_str]
         elif month_str and month_str.isdigit():
             month = int(month_str)
-        else:
-            month = 1 # Default to January if month is missing/invalid
+            # Add validation for month number
+            if not 1 <= month <= 12:
+                print(f"  Warning: Invalid month value '{month_str}' parsed. Defaulting month to 1.")
+                month = 1 # Reset to default if invalid
+        # else: month remains 1 (default)
 
         day = int(day_str) if day_str and day_str.isdigit() else 1 # Default to 1st if day is missing/invalid
 
@@ -193,21 +199,34 @@ def parse_pubmed_date(date_info: dict) -> str | None:
 
         return f"{year:04d}-{month:02d}-{day:02d}"
     except (ValueError, TypeError, AttributeError):
-        # Handle cases where Year, Month, or Day are missing or not parsable
-        # Try to get just the MedlineDate if PubDate fails
+        # MedlineDate fallback logic
         medline_date = date_info.get('MedlineDate')
         if medline_date and isinstance(medline_date, str):
-            # Basic parsing for YYYY format or YYYY Mon format
             parts = medline_date.split()
-            if parts[0].isdigit() and len(parts[0]) == 4:
+            # Check if first part is a valid 4-digit year
+            if parts and parts[0].isdigit() and len(parts[0]) == 4:
                 year = int(parts[0])
-                month = 1
-                if len(parts) > 1:
-                     month_str_medline = parts[1][:3]
-                     if month_str_medline in month_map:
-                         month = month_map[month_str_medline]
-                return f"{year:04d}-{month:02d}-01" # Default to 1st day
-        return None # Could not parse
+                month = 1 # Default month
+                month_parsed_successfully = False
+
+                if len(parts) == 1:
+                    # Only year found - this is acceptable, use default month
+                    month_parsed_successfully = True 
+                elif len(parts) > 1:
+                    # Attempt to parse month from the second part
+                    month_str_medline = parts[1][:3].capitalize()
+                    if month_str_medline in month_map:
+                        month = month_map[month_str_medline]
+                        month_parsed_successfully = True
+                    # else: month string is not in map (e.g., 'Spring'), parsing fails for month
+                
+                # Only return date if year was valid AND month part was absent or validly parsed
+                if month_parsed_successfully:
+                    return f"{year:04d}-{month:02d}-01"
+                # Else (e.g., '2020 Spring'), month part was present but invalid, so return None
+        
+        # If any checks failed or parsing was incomplete/invalid
+        return None
 
 def fetch_abstracts(pmids: list[str], entrez_email: str) -> Dict[str, PubMedArticle]:
     """Fetches full article details for PMIDs, returns Pydantic models."""

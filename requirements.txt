@@ -6,4 +6,8 @@ python-dotenv
 numpy
 pydantic
 fastapi
-uvicorn[standard] 
+uvicorn[standard]
+# Testing
+pytest
+pytest-asyncio
+httpx 
