@@ -80,52 +80,86 @@ def generate_mesh_terms(query: str, llm_client: OpenAI, model: str = DEFAULT_LLM
         return []
 
 def search_pubmed_keywords(query: str, mesh_terms: list[str] | None, max_results: int, entrez_email: str) -> tuple[list[str], str]:
-    """Performs a keyword search on PubMed, returns ordered PMIDs and the query used."""
-    Entrez.email = entrez_email # Set email for this call
-    final_query = ""
-    query_description = ""
-    
-    if mesh_terms:
-        mesh_query_part = " OR ".join([f'\"{term}\"[MeSH Terms]' for term in mesh_terms])
-        if mesh_query_part:
-             final_query = mesh_query_part
-             query_description = "using generated MeSH terms"
-             print(f"Constructed PubMed query based on MeSH terms.")
-        else:
-             print("Warning: MeSH terms provided but resulted in empty query part. Falling back to original query.")
-             final_query = query
-             query_description = "using original query (MeSH generation failed)"
-    else:
-        print("No MeSH terms generated or provided. Using original query text.")
-        final_query = query
-        query_description = "using original query"
-
-    print(f"Executing PubMed query ({query_description}): {final_query}")
+    """Performs a keyword search, combining query text and MeSH Major Topics with fallbacks."""
+    Entrez.email = entrez_email
     pmids = []
-    try:
-        handle = Entrez.esearch(db="pubmed", term=final_query, retmax=str(max_results), sort="relevance")
-        record = Entrez.read(handle)
-        handle.close()
-        pmids = record.get("IdList", [])
-        print(f"Found {len(pmids)} potential PMIDs {query_description}.")
-    except Exception as e:
-        print(f"Error during PubMed keyword search ({query_description}): {e}")
-        if mesh_terms and final_query != query: 
-             print(f"MeSH-based query failed. Falling back to original query: {query}")
-             final_query = query # Update final_query to reflect fallback
-             try:
-                  handle = Entrez.esearch(db="pubmed", term=query, retmax=str(max_results), sort="relevance")
-                  record = Entrez.read(handle)
-                  handle.close()
-                  pmids = record.get("IdList", [])
-                  print(f"Found {len(pmids)} potential PMIDs using fallback original query.")
-             except Exception as e2:
-                  print(f"Error during fallback PubMed keyword search: {e2}")
-                  pmids = [] # Ensure empty list on error
+    final_query_used = query # Default to original query
+    min_results_threshold = 20 # Threshold to trigger fallback
+
+    # --- Attempt 1: Query Text AND MeSH Major Topics ---
+    if mesh_terms:
+        major_topic_query_part = " OR ".join([f'\"{term}\"[MeSH Major Topic]' for term in mesh_terms])
+        if major_topic_query_part:
+            refined_query = f"({query}) AND ({major_topic_query_part})"
+            print(f"Executing PubMed query (Attempt 1: Text AND MeSH Major Topics): {refined_query}")
+            try:
+                handle = Entrez.esearch(db="pubmed", term=refined_query, retmax=str(max_results), sort="relevance")
+                record = Entrez.read(handle)
+                handle.close()
+                pmids = record.get("IdList", [])
+                final_query_used = refined_query
+                print(f"Found {len(pmids)} potential PMIDs.")
+                # If enough results, return them
+                if len(pmids) >= min_results_threshold:
+                    return pmids, final_query_used
+                else:
+                    print(f"Attempt 1 yielded only {len(pmids)} results (threshold: {min_results_threshold}). Trying broader MeSH Terms...")
+            except Exception as e:
+                print(f"Error during PubMed search (Attempt 1): {e}. Trying broader MeSH Terms...")
+                # Proceed to Attempt 2
         else:
-             pmids = []
+             print("Warning: MeSH terms provided but resulted in an empty Major Topic query part. Skipping Attempt 1.")
+
+    # --- Attempt 2: Query Text AND MeSH Terms (Broader) ---
+    # Triggered if Attempt 1 failed, yielded too few results, or MeSH terms existed but query part was empty
+    if mesh_terms and (not pmids or len(pmids) < min_results_threshold): # Check if we need to run this attempt
+        terms_query_part = " OR ".join([f'\"{term}\"[MeSH Terms]' for term in mesh_terms])
+        if terms_query_part:
+            refined_query_broad = f"({query}) AND ({terms_query_part})"
+            # Avoid re-running if it's identical to a failed previous query (unlikely here)
+            if refined_query_broad != final_query_used: 
+                print(f"Executing PubMed query (Attempt 2: Text AND MeSH Terms): {refined_query_broad}")
+                try:
+                    handle = Entrez.esearch(db="pubmed", term=refined_query_broad, retmax=str(max_results), sort="relevance")
+                    record = Entrez.read(handle)
+                    handle.close()
+                    pmids = record.get("IdList", [])
+                    final_query_used = refined_query_broad
+                    print(f"Found {len(pmids)} potential PMIDs.")
+                    # If enough results now, return them
+                    if len(pmids) >= min_results_threshold:
+                        return pmids, final_query_used
+                    else:
+                        print(f"Attempt 2 yielded only {len(pmids)} results. Falling back to original query text...")
+                except Exception as e:
+                    print(f"Error during PubMed search (Attempt 2): {e}. Falling back to original query text...")
+                    # Proceed to Attempt 3
+            else:
+                 print("Broad MeSH query is same as a previous attempt. Falling back to original query text...")
+        else:
+            print("Warning: MeSH terms provided but resulted in an empty MeSH Terms query part. Falling back to original query text.")
+
+    # --- Attempt 3: Original Query Text Only ---
+    # Triggered if MeSH terms weren't generated, or Attempts 1 & 2 failed or yielded too few results
+    if not pmids or len(pmids) < min_results_threshold: # Check if we need to run this fallback
+        # Avoid re-running if original query was already tried and failed
+        if final_query_used != query or not pmids: # Check if original query differs or pmids is empty
+            print(f"Executing PubMed query (Attempt 3: Original Text Only): {query}")
+            try:
+                handle = Entrez.esearch(db="pubmed", term=query, retmax=str(max_results), sort="relevance")
+                record = Entrez.read(handle)
+                handle.close()
+                pmids = record.get("IdList", [])
+                final_query_used = query
+                print(f"Found {len(pmids)} potential PMIDs using only original query text.")
+            except Exception as e:
+                print(f"Error during PubMed search (Attempt 3 - Original Query): {e}")
+                pmids = [] # Ensure empty on final failure
+        else:
+             print("Original query already attempted or results were insufficient. Returning current results.")
              
-    return pmids, final_query # Return PMIDs and the actual query string used
+    # Return whatever PMIDs we have at the end, and the last query tried
+    return pmids, final_query_used
 
 def parse_pubmed_date(date_info: dict) -> str | None:
     """Helper function to parse various PubMed date formats."""
