@@ -1,0 +1,7 @@
+Query sent to API: Advances in CAR-T cell therapy for lymphoma
+Ranking Mode: pubmed
+Top K requested: 20
+
+PubMed Query Used (from API response):
+--------------------
+(Advances in CAR-T cell therapy for lymphoma) AND ("Chimeric Antigen Receptor T-Cell Therapy"[MeSH Major Topic] OR "Lymphoma"[MeSH Major Topic] OR "Immunotherapy"[MeSH Major Topic] OR "T-Lymphocytes"[MeSH Major Topic] OR "Neoplasms"[MeSH Major Topic] OR "Hematologic Neoplasms"[MeSH Major Topic] OR "Antigens"[MeSH Major Topic] OR "CD19"[MeSH Major Topic] OR "Genetic Therapy"[MeSH Major Topic] OR "Clinical Trials as Topic"[MeSH Major Topic])

@@ -1,0 +1,1487 @@
+{
+    "query": "Advances in CAR-T cell therapy for lymphoma",
+    "ranking_mode": "semantic",
+    "min_year_filter": null,
+    "generated_mesh_terms": [
+        "Chimeric Antigen Receptor T-Cell Therapy",
+        "Lymphoma",
+        "Immunotherapy",
+        "Genetic Therapy",
+        "Neoplasms",
+        "Hematologic Neoplasms",
+        "T-Lymphocytes",
+        "Antigens",
+        "Neoplasm",
+        "Receptors",
+        "Antigen",
+        "T-Cell",
+        "Gene Expression Regulation",
+        "Neoplastic"
+    ],
+    "pubmed_query_used": "(Advances in CAR-T cell therapy for lymphoma) AND (\"Chimeric Antigen Receptor T-Cell Therapy\"[MeSH Major Topic] OR \"Lymphoma\"[MeSH Major Topic] OR \"Immunotherapy\"[MeSH Major Topic] OR \"Genetic Therapy\"[MeSH Major Topic] OR \"Neoplasms\"[MeSH Major Topic] OR \"Hematologic Neoplasms\"[MeSH Major Topic] OR \"T-Lymphocytes\"[MeSH Major Topic] OR \"Antigens\"[MeSH Major Topic] OR \"Neoplasm\"[MeSH Major Topic] OR \"Receptors\"[MeSH Major Topic] OR \"Antigen\"[MeSH Major Topic] OR \"T-Cell\"[MeSH Major Topic] OR \"Gene Expression Regulation\"[MeSH Major Topic] OR \"Neoplastic\"[MeSH Major Topic])",
+    "results_count": 20,
+    "results": [
+        {
+            "pmid": "32383222",
+            "rank": 1,
+            "score": 0.8192181587219238,
+            "title": "Advances in CAR T Therapy for Hematologic Malignancies.",
+            "abstract_snippet": "Advances in CAR T Therapy for Hematologic Malignancies.. The introduction of chimeric antigen receptor T-cell (CAR T) therapy has resulted in a paradigm shift in the management of relapsed/refractory B-cell malignancies. Patients with acute lymphoblastic leukemia and non-Hodgkin's lymphoma who had e...",
+            "authors": [
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Craig W Freyer"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "David L Porter"
+                }
+            ],
+            "journal": "Pharmacotherapy",
+            "pubDate": "2020-08-01",
+            "publicationTypes": [
+                "Journal Article",
+                "Review"
+            ],
+            "meshHeadings": [
+                "Animals",
+                "Cytokine Release Syndrome",
+                "Hematologic Neoplasms",
+                "Humans",
+                "Immunotherapy",
+                "Adoptive",
+                "Neurotoxicity Syndromes",
+                "Treatment Outcome"
+            ],
+            "keywords": [
+                "acute lymphoblastic leukemia",
+                "chimeric antigen receptor",
+                "cytokine release syndrome",
+                "multiple myeloma",
+                "non-Hodgkin lymphoma"
+            ],
+            "language": "eng",
+            "doi": "10.1002/phar.2414",
+            "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/32383222/",
+            "doi_url": "https://doi.org/10.1002/phar.2414"
+        },
+        {
+            "pmid": "30427551",
+            "rank": 2,
+            "score": 0.8143355250358582,
+            "title": "The acceleration of CAR-T therapy in non-Hodgkin lymphoma.",
+            "abstract_snippet": "The acceleration of CAR-T therapy in non-Hodgkin lymphoma.. Recent advances in diffuse large B-cell lymphomas have included both identification of high-risk subtypes characterized by multiply relapsed and/or refractory disease as well as novel treatment in the form of cellular therapy. Chimeric anti...",
+            "authors": [
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Pashna N Munshi"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Chaitra Ujjani"
+                }
+            ],
+            "journal": "Hematological oncology",
+            "pubDate": "2019-08-01",
+            "publicationTypes": [
+                "Journal Article",
+                "Review"
+            ],
+            "meshHeadings": [
+                "Animals",
+                "Antigens",
+                "CD19",
+                "B-Lymphocytes",
+                "Biological Products",
+                "Cytokines",
+                "Humans",
+                "Immunotherapy",
+                "Adoptive",
+                "Lymphoma",
+                "Large B-Cell",
+                "Diffuse",
+                "Lymphoma",
+                "Non-Hodgkin",
+                "Mice",
+                "Receptors",
+                "Antigen",
+                "T-Cell",
+                "Receptors",
+                "Chimeric Antigen",
+                "Remission Induction",
+                "T-Lymphocytes",
+                "Treatment Outcome"
+            ],
+            "keywords": [],
+            "language": "eng",
+            "doi": "10.1002/hon.2568",
+            "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/30427551/",
+            "doi_url": "https://doi.org/10.1002/hon.2568"
+        },
+        {
+            "pmid": "34105817",
+            "rank": 3,
+            "score": 0.796968936920166,
+            "title": "Optimizing CAR T cell therapy in lymphoma.",
+            "abstract_snippet": "Optimizing CAR T cell therapy in lymphoma.. Chimeric antigen receptor (CAR) T cell therapy has significantly improved the outlook for patients with certain types of poor-risk lymphoma. Despite these advances, a majority of patients undergoing CAR T therapy will suffer progression or relapse of disea...",
+            "authors": [
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "David Qualls"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Gilles Salles"
+                }
+            ],
+            "journal": "Hematological oncology",
+            "pubDate": "2021-06-01",
+            "publicationTypes": [
+                "Journal Article",
+                "Review"
+            ],
+            "meshHeadings": [
+                "Humans",
+                "Immunotherapy",
+                "Adoptive",
+                "Lymphoma",
+                "Receptors",
+                "Chimeric Antigen"
+            ],
+            "keywords": [
+                "cellular therapy",
+                "chimeric antigen receptor T cell",
+                "lymphoma"
+            ],
+            "language": "eng",
+            "doi": "10.1002/hon.2844",
+            "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/34105817/",
+            "doi_url": "https://doi.org/10.1002/hon.2844"
+        },
+        {
+            "pmid": "37062016",
+            "rank": 4,
+            "score": 0.7898184657096863,
+            "title": "Recent advances in CAR T-cell therapy for lymphoma in China.",
+            "abstract_snippet": "Recent advances in CAR T-cell therapy for lymphoma in China.. Lymphoma is a hematologic malignancy which mainly consists of Hodgkin lymphoma (HL) and non-Hodgkin lymphoma (NHL). Although systemic chemotherapy, radiotherapy, and other advanced therapeutics, including rituximab or immune checkpoint in...",
+            "authors": [
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Yuxuan Che"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Xiuhua Sun"
+                }
+            ],
+            "journal": "Clinical & translational oncology : official publication of the Federation of Spanish Oncology Societies and of the National Cancer Institute of Mexico",
+            "pubDate": "2023-10-01",
+            "publicationTypes": [
+                "Journal Article",
+                "Review"
+            ],
+            "meshHeadings": [
+                "Humans",
+                "Immunotherapy",
+                "Adoptive",
+                "Lymphoma",
+                "Lymphoma",
+                "Non-Hodgkin",
+                "Hodgkin Disease",
+                "Prognosis"
+            ],
+            "keywords": [
+                "CAR T-cell therapy",
+                "China",
+                "Clinical trials",
+                "Lymphoma"
+            ],
+            "language": "eng",
+            "doi": "10.1007/s12094-023-03153-1",
+            "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/37062016/",
+            "doi_url": "https://doi.org/10.1007/s12094-023-03153-1"
+        },
+        {
+            "pmid": "33212810",
+            "rank": 5,
+            "score": 0.7692793607711792,
+            "title": "Gene Modified CAR-T Cellular Therapy for Hematologic Malignancies.",
+            "abstract_snippet": "Gene Modified CAR-T Cellular Therapy for Hematologic Malignancies.. With advances in the understanding of characteristics of molecules, specific antigens on the surface of hematological malignant cells were identified and multiple therapies targeting these antigens as neoplasm treatments were develo...",
+            "authors": [
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Wen-Ying Lin"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Hsin-Hui Wang"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Yi-Wei Chen"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Chun-Fu Lin"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Hueng-Chuen Fan"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Yi-Yen Lee"
+                }
+            ],
+            "journal": "International journal of molecular sciences",
+            "pubDate": "2020-11-17",
+            "publicationTypes": [
+                "Journal Article",
+                "Review"
+            ],
+            "meshHeadings": [
+                "Adoptive Transfer",
+                "Hematologic Neoplasms",
+                "Humans"
+            ],
+            "keywords": [
+                "acute lymphoblastic leukemia (ALL)",
+                "chimeric antigen receptor (CAR)-T cells",
+                "diffuse large B cell lymphoma (DLBCL)",
+                "gene modified-based cellular platform",
+                "immunotherapy",
+                "multiple myeloma (MM)"
+            ],
+            "language": "eng",
+            "doi": "10.3390/ijms21228655",
+            "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/33212810/",
+            "doi_url": "https://doi.org/10.3390/ijms21228655"
+        },
+        {
+            "pmid": "31355492",
+            "rank": 6,
+            "score": 0.7634562253952026,
+            "title": "Updates on CAR T-cell therapy in B-cell malignancies.",
+            "abstract_snippet": "Updates on CAR T-cell therapy in B-cell malignancies.. By increasing disease-free survival and offering the potential for long-term cure, chimeric antigen receptor (CAR) T-cell therapy has dramatically expanded therapeutic options among those with high-risk B-cell malignancies. As CAR T-cell utiliza...",
+            "authors": [
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Elad Jacoby"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Shilpa A Shahani"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Nirali N Shah"
+                }
+            ],
+            "journal": "Immunological reviews",
+            "pubDate": "2019-07-01",
+            "publicationTypes": [
+                "Journal Article",
+                "Review"
+            ],
+            "meshHeadings": [
+                "Animals",
+                "Antigens",
+                "CD19",
+                "Antigens",
+                "Neoplasm",
+                "B-Lymphocytes",
+                "Disease Models",
+                "Animal",
+                "Humans",
+                "Immunotherapy",
+                "Adoptive",
+                "Leukemia",
+                "B-Cell",
+                "Lymphoma",
+                "B-Cell",
+                "Receptors",
+                "Antigen",
+                "T-Cell",
+                "Receptors",
+                "Chimeric Antigen",
+                "T-Lymphocytes",
+                "Treatment Outcome"
+            ],
+            "keywords": [
+                "CAR T-cell therapy",
+                "acute lymphoblastic leukemia",
+                "adoptive cell therapy",
+                "diffuse large B-cell lymphoma",
+                "immunotherapy",
+                "multiple myeloma"
+            ],
+            "language": "eng",
+            "doi": "10.1111/imr.12774",
+            "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/31355492/",
+            "doi_url": "https://doi.org/10.1111/imr.12774"
+        },
+        {
+            "pmid": "32925186",
+            "rank": 7,
+            "score": 0.7629098892211914,
+            "title": "Advances in chimeric antigen receptor T cells.",
+            "abstract_snippet": "Advances in chimeric antigen receptor T cells.. To discuss the important advances in CAR T cell therapy over the past year, focusing on clinical results where available. Approximately 30 years after they were first conceived of and 15 years after the first small-scale single-center clinical trials, ...",
+            "authors": [
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Ofrat Beyar-Katz"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Saar Gill"
+                }
+            ],
+            "journal": "Current opinion in hematology",
+            "pubDate": "2020-11-01",
+            "publicationTypes": [
+                "Journal Article",
+                "Review"
+            ],
+            "meshHeadings": [
+                "Animals",
+                "Antigens",
+                "CD19",
+                "Biological Products",
+                "Clinical Trials as Topic",
+                "Humans",
+                "Immunotherapy",
+                "Adoptive",
+                "Leukemia",
+                "Lymphoma",
+                "Multiple Myeloma",
+                "Receptors",
+                "Antigen",
+                "T-Cell",
+                "Receptors",
+                "Chimeric Antigen",
+                "Treatment Outcome"
+            ],
+            "keywords": [],
+            "language": "eng",
+            "doi": "10.1097/MOH.0000000000000614",
+            "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/32925186/",
+            "doi_url": "https://doi.org/10.1097/MOH.0000000000000614"
+        },
+        {
+            "pmid": "37420216",
+            "rank": 8,
+            "score": 0.7590503692626953,
+            "title": "Harnessing the potential of CAR-T cell therapy: progress, challenges, and future directions in hematological and solid tumor treatments.",
+            "abstract_snippet": "Harnessing the potential of CAR-T cell therapy: progress, challenges, and future directions in hematological and solid tumor treatments.. Traditional cancer treatments use nonspecific drugs and monoclonal antibodies to target tumor cells. Chimeric antigen receptor (CAR)-T cell therapy, however, leve...",
+            "authors": [
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Gunjan Dagar"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Ashna Gupta"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Tariq Masoodi"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Sabah Nisar"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Maysaloun Merhi"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Sheema Hashem"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Ravi Chauhan"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Manisha Dagar"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Sameer Mirza"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Puneet Bagga"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Rakesh Kumar"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Ammira S Al-Shabeeb Akil"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Muzafar A Macha"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Mohammad Haris"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Shahab Uddin"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Mayank Singh"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Ajaz A Bhat"
+                }
+            ],
+            "journal": "Journal of translational medicine",
+            "pubDate": "2023-07-07",
+            "publicationTypes": [
+                "Journal Article",
+                "Review",
+                "Research Support",
+                "Non-U.S. Gov't"
+            ],
+            "meshHeadings": [
+                "Humans",
+                "Receptors",
+                "Chimeric Antigen",
+                "Artificial Intelligence",
+                "Neoplasms",
+                "Immunotherapy",
+                "Adoptive",
+                "Antigens",
+                "Neoplasm",
+                "Multiple Myeloma",
+                "Hematologic Neoplasms",
+                "Tumor Microenvironment",
+                "Cell- and Tissue-Based Therapy"
+            ],
+            "keywords": [
+                "Antigen escape",
+                "CAR-T cell therapy",
+                "Cytokine release syndrome",
+                "Hematological malignancy",
+                "Immunotherapy",
+                "Solid tumor",
+                "Tumor antigens"
+            ],
+            "language": "eng",
+            "doi": "10.1186/s12967-023-04292-3",
+            "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/37420216/",
+            "doi_url": "https://doi.org/10.1186/s12967-023-04292-3"
+        },
+        {
+            "pmid": "35652169",
+            "rank": 9,
+            "score": 0.7579105496406555,
+            "title": "CAR-T Therapy in Clinical Practice: Technical Advances and Current Challenges.",
+            "abstract_snippet": "CAR-T Therapy in Clinical Practice: Technical Advances and Current Challenges.. Chimeric antigen receptors (CAR) redirect T cells to specifically recognize and eliminate tumor cells. CAR-T therapy has achieved successful clinical outcomes, and it has been transformed into commercially available prod...",
+            "authors": [
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Ping Ren"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Chuyue Zhang"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Wenping Li"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Xian Wang"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Aibing Liang"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Guang Yang"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Hongtao Xu"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Peixiang Ma"
+                }
+            ],
+            "journal": "Advanced biology",
+            "pubDate": "2022-08-01",
+            "publicationTypes": [
+                "Journal Article",
+                "Review",
+                "Research Support",
+                "Non-U.S. Gov't"
+            ],
+            "meshHeadings": [
+                "Humans",
+                "Immunotherapy",
+                "Adoptive",
+                "Precursor Cell Lymphoblastic Leukemia-Lymphoma",
+                "Receptors",
+                "Antigen",
+                "T-Cell",
+                "Receptors",
+                "Chimeric Antigen",
+                "T-Lymphocytes"
+            ],
+            "keywords": [
+                "CAR-T",
+                "T cell engineering",
+                "clinical trials",
+                "immunotherapy"
+            ],
+            "language": "eng",
+            "doi": "10.1002/adbi.202101262",
+            "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/35652169/",
+            "doi_url": "https://doi.org/10.1002/adbi.202101262"
+        },
+        {
+            "pmid": "38910268",
+            "rank": 10,
+            "score": 0.7513756155967712,
+            "title": "Recent Advances in CAR-T Therapy.",
+            "abstract_snippet": "Recent Advances in CAR-T Therapy.. Chimeric antigen receptor T cell therapy is used to treat hematological malignancies which are refractory to standard therapy. It is a form of immunotherapy in which a patient's T cells are programmed to act against tumor cells. We discuss the process of manufactur...",
+            "authors": [
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Meher Binte Ali"
+                }
+            ],
+            "journal": "Cancer control : journal of the Moffitt Cancer Center",
+            "pubDate": "2024-01-01",
+            "publicationTypes": [
+                "Editorial"
+            ],
+            "meshHeadings": [
+                "Humans",
+                "Hematologic Neoplasms",
+                "Immunotherapy",
+                "Adoptive",
+                "Receptors",
+                "Antigen",
+                "T-Cell",
+                "Receptors",
+                "Chimeric Antigen",
+                "T-Lymphocytes"
+            ],
+            "keywords": [
+                "CAR-T therapy",
+                "cytokine release syndrome",
+                "lymphoma",
+                "neurotoxicity"
+            ],
+            "language": "eng",
+            "doi": "10.1177/10732748241263713",
+            "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/38910268/",
+            "doi_url": "https://doi.org/10.1177/10732748241263713"
+        },
+        {
+            "pmid": "35417527",
+            "rank": 11,
+            "score": 0.7504912614822388,
+            "title": "Next-Generation CAR T-cell Therapies.",
+            "abstract_snippet": "Next-Generation CAR T-cell Therapies.. CD19- and B-cell maturation antigen (BCMA)-directed chimeric antigen receptor (CAR) T cells have enabled unprecedented responses in a subset of refractory patients with B-cell and plasma cell malignancies, leading to their approval by the FDA for the treatment ...",
+            "authors": [
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Regina M Young"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Nils W Engel"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Ugur Uslu"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Nils Wellhausen"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Carl H June"
+                }
+            ],
+            "journal": "Cancer discovery",
+            "pubDate": "2022-07-06",
+            "publicationTypes": [
+                "Journal Article",
+                "Research Support",
+                "Non-U.S. Gov't",
+                "Research Support",
+                "N.I.H.",
+                "Extramural"
+            ],
+            "meshHeadings": [
+                "Antigens",
+                "CD19",
+                "B-Cell Maturation Antigen",
+                "Humans",
+                "Immunotherapy",
+                "Adoptive",
+                "Multiple Myeloma",
+                "Receptors",
+                "Antigen",
+                "T-Cell",
+                "T-Lymphocytes",
+                "Tumor Microenvironment"
+            ],
+            "keywords": [],
+            "language": "eng",
+            "doi": "10.1158/2159-8290.CD-21-1683",
+            "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/35417527/",
+            "doi_url": "https://doi.org/10.1158/2159-8290.CD-21-1683"
+        },
+        {
+            "pmid": "32616000",
+            "rank": 12,
+            "score": 0.7498968839645386,
+            "title": "Recent advances in CAR-T cell engineering.",
+            "abstract_snippet": "Recent advances in CAR-T cell engineering.. Chimeric antigen receptor T (CAR-T) cell therapy is regarded as an effective solution for relapsed or refractory tumors, particularly for hematological malignancies. Although the initially approved anti-CD19 CAR-T therapy has produced impressive outcomes, ...",
+            "authors": [
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Ruihao Huang"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Xiaoping Li"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Yundi He"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Wen Zhu"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Lei Gao"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Yao Liu"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Li Gao"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Qin Wen"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Jiang F Zhong"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Cheng Zhang"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Xi Zhang"
+                }
+            ],
+            "journal": "Journal of hematology & oncology",
+            "pubDate": "2020-07-02",
+            "publicationTypes": [
+                "Journal Article",
+                "Research Support",
+                "Non-U.S. Gov't",
+                "Review"
+            ],
+            "meshHeadings": [
+                "Antigens",
+                "CD19",
+                "Antigens",
+                "Neoplasm",
+                "CD28 Antigens",
+                "Cell Engineering",
+                "Chemotaxis",
+                "Leukocyte",
+                "Clinical Trials as Topic",
+                "Cytokines",
+                "Genetic Vectors",
+                "Humans",
+                "Immunotherapy",
+                "Adoptive",
+                "Lentivirus",
+                "Lymphoma",
+                "Large B-Cell",
+                "Diffuse",
+                "Neoplasms",
+                "Precursor B-Cell Lymphoblastic Leukemia-Lymphoma",
+                "Protein Binding",
+                "Protein Domains",
+                "Protein Engineering",
+                "Receptors",
+                "Chemokine",
+                "Receptors",
+                "Chimeric Antigen",
+                "T-Cell Antigen Receptor Specificity",
+                "T-Lymphocytes",
+                "Transduction",
+                "Genetic",
+                "Tumor Microenvironment"
+            ],
+            "keywords": [
+                "CAR-T cell therapy",
+                "Hematological malignancies",
+                "Immune therapy"
+            ],
+            "language": "eng",
+            "doi": "10.1186/s13045-020-00910-5",
+            "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/32616000/",
+            "doi_url": "https://doi.org/10.1186/s13045-020-00910-5"
+        },
+        {
+            "pmid": "31578576",
+            "rank": 13,
+            "score": 0.7487701773643494,
+            "title": "CAR T cell therapy: A new era for cancer treatment (Review).",
+            "abstract_snippet": "CAR T cell therapy: A new era for cancer treatment (Review).. Cancer has recently been identified as the leading cause of mortality worldwide. Several conventional treatments and cytotoxic immunotherapies have been developed and made available to the market. Considering the complex behavior of tumor...",
+            "authors": [
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Rimjhim Mohanty"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Chitran Roy Chowdhury"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Solomon Arega"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Prakriti Sen"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Pooja Ganguly"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Niladri Ganguly"
+                }
+            ],
+            "journal": "Oncology reports",
+            "pubDate": "2019-12-01",
+            "publicationTypes": [
+                "Journal Article",
+                "Review"
+            ],
+            "meshHeadings": [
+                "Animals",
+                "Cell- and Tissue-Based Therapy",
+                "Humans",
+                "Immunotherapy",
+                "Neoplasms",
+                "Receptors",
+                "Antigen",
+                "T-Cell",
+                "T-Lymphocytes"
+            ],
+            "keywords": [],
+            "language": "eng",
+            "doi": "10.3892/or.2019.7335",
+            "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/31578576/",
+            "doi_url": "https://doi.org/10.3892/or.2019.7335"
+        },
+        {
+            "pmid": "36717905",
+            "rank": 14,
+            "score": 0.745309591293335,
+            "title": "CAR-cell therapy in the era of solid tumor treatment: current challenges and emerging therapeutic advances.",
+            "abstract_snippet": "CAR-cell therapy in the era of solid tumor treatment: current challenges and emerging therapeutic advances.. In the last decade, Chimeric Antigen Receptor (CAR)-T cell therapy has emerged as a promising immunotherapeutic approach to fight cancers. This approach consists of genetically engineered imm...",
+            "authors": [
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Karama Makni Maalej"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Maysaloun Merhi"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Varghese P Inchakalody"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Sarra Mestiri"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Majid Alam"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Cristina Maccalli"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Honar Cherif"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Shahab Uddin"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Martin Steinhoff"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Francesco M Marincola"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Said Dermime"
+                }
+            ],
+            "journal": "Molecular cancer",
+            "pubDate": "2023-01-30",
+            "publicationTypes": [
+                "Journal Article",
+                "Review",
+                "Research Support",
+                "Non-U.S. Gov't"
+            ],
+            "meshHeadings": [
+                "Humans",
+                "Receptors",
+                "Chimeric Antigen",
+                "T-Lymphocytes",
+                "Prospective Studies",
+                "Neoplasms",
+                "Immunotherapy",
+                "Adoptive",
+                "Cell- and Tissue-Based Therapy",
+                "Tumor Microenvironment"
+            ],
+            "keywords": [
+                "CAR-M",
+                "CAR-NK",
+                "CAR-T",
+                "Cellular immunotherapy",
+                "Combined therapies",
+                "Solid tumors"
+            ],
+            "language": "eng",
+            "doi": "10.1186/s12943-023-01723-z",
+            "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/36717905/",
+            "doi_url": "https://doi.org/10.1186/s12943-023-01723-z"
+        },
+        {
+            "pmid": "32657796",
+            "rank": 15,
+            "score": 0.741168200969696,
+            "title": "New targets and technologies for CAR-T cells.",
+            "abstract_snippet": "New targets and technologies for CAR-T cells.. Immunotherapy with gene-engineered chimeric antigen receptor (CAR)-T cells has curative potential in advanced malignancies and undergoes a surging preclinical and clinical development. Here, we present a selection of new targets and technologies that il...",
+            "authors": [
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Fabian Freitag"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Marius Maucher"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Zeno Riester"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Michael Hudecek"
+                }
+            ],
+            "journal": "Current opinion in oncology",
+            "pubDate": "2020-09-01",
+            "publicationTypes": [
+                "Journal Article",
+                "Research Support",
+                "Non-U.S. Gov't",
+                "Review"
+            ],
+            "meshHeadings": [
+                "Humans",
+                "Immunotherapy",
+                "Adoptive",
+                "Molecular Targeted Therapy",
+                "Neoplasms",
+                "Receptors",
+                "Antigen",
+                "T-Cell",
+                "Receptors",
+                "Chimeric Antigen"
+            ],
+            "keywords": [],
+            "language": "eng",
+            "doi": "10.1097/CCO.0000000000000653",
+            "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/32657796/",
+            "doi_url": "https://doi.org/10.1097/CCO.0000000000000653"
+        },
+        {
+            "pmid": "34920118",
+            "rank": 16,
+            "score": 0.7396129369735718,
+            "title": "Improving the ability of CAR-T cells to hit solid tumors: Challenges and strategies.",
+            "abstract_snippet": "Improving the ability of CAR-T cells to hit solid tumors: Challenges and strategies.. Chimeric antigen receptor T cell (CAR-T) therapy is a late-model of immune cell therapy that has been shown to be effective in refractory/recurrent B-cell leukemia and lymphoma. Compared with the traditional anti-t...",
+            "authors": [
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Zheng-Zheng Zhang"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Tian Wang"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Xiao-Feng Wang"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Yu-Qing Zhang"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Shu-Xia Song"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Cui-Qing Ma"
+                }
+            ],
+            "journal": "Pharmacological research",
+            "pubDate": "2022-01-01",
+            "publicationTypes": [
+                "Journal Article",
+                "Research Support",
+                "Non-U.S. Gov't",
+                "Review"
+            ],
+            "meshHeadings": [
+                "Animals",
+                "Antigens",
+                "Neoplasm",
+                "Humans",
+                "Immune Tolerance",
+                "Immunotherapy",
+                "Adoptive",
+                "Neoplasms",
+                "Receptors",
+                "Chimeric Antigen",
+                "T-Lymphocytes",
+                "Tumor Escape",
+                "Tumor Microenvironment"
+            ],
+            "keywords": [
+                "Antigenic heterogeneity",
+                "Chimeric antigen receptor T cell (CAR-T)",
+                "Combination therapy",
+                "Exhaustion",
+                "Persistence",
+                "Solid tumor",
+                "Tumor microenvironment (TEM)"
+            ],
+            "language": "eng",
+            "doi": "10.1016/j.phrs.2021.106036",
+            "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/34920118/",
+            "doi_url": "https://doi.org/10.1016/j.phrs.2021.106036"
+        },
+        {
+            "pmid": "38066908",
+            "rank": 17,
+            "score": 0.7383894324302673,
+            "title": "Management of aggressive lymphoma after CAR T-cell therapy failure.",
+            "abstract_snippet": "Management of aggressive lymphoma after CAR T-cell therapy failure.. Several recent advances have affected the treatment landscape of diffuse large B-cell lymphoma. Chimeric antigen receptor (CAR) T-cell therapy has transformed the management of chemorefractory disease. Two randomized studies in ear...",
+            "authors": [
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Loretta J Nastoupil"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Swetha Kambhampati Thiruvengadam"
+                }
+            ],
+            "journal": "Hematology. American Society of Hematology. Education Program",
+            "pubDate": "2023-12-08",
+            "publicationTypes": [
+                "Review",
+                "Journal Article"
+            ],
+            "meshHeadings": [
+                "Humans",
+                "Immunotherapy",
+                "Adoptive",
+                "Receptors",
+                "Antigen",
+                "T-Cell",
+                "Prospective Studies",
+                "Neoplasm Recurrence",
+                "Local",
+                "Lymphoma",
+                "Large B-Cell",
+                "Diffuse",
+                "Antigens",
+                "CD19",
+                "Recurrence"
+            ],
+            "keywords": [],
+            "language": "eng",
+            "doi": "10.1182/hematology.2023000437",
+            "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/38066908/",
+            "doi_url": "https://doi.org/10.1182/hematology.2023000437"
+        },
+        {
+            "pmid": "35212892",
+            "rank": 18,
+            "score": 0.7383509874343872,
+            "title": "Allogeneic Chimeric Antigen Receptor Therapy in Lymphoma.",
+            "abstract_snippet": "Allogeneic Chimeric Antigen Receptor Therapy in Lymphoma.. The therapeutic armamentarium has significantly expanded since the approval of various CD19-targeting chimeric antigen receptor T cell (CAR-T) therapies in non-Hodgkin lymphoma (NHL). These CAR-Ts are patient-specific and require a complex, ...",
+            "authors": [
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Arushi Khurana"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Yi Lin"
+                }
+            ],
+            "journal": "Current treatment options in oncology",
+            "pubDate": "2022-02-01",
+            "publicationTypes": [
+                "Journal Article",
+                "Review"
+            ],
+            "meshHeadings": [
+                "Antigens",
+                "CD19",
+                "Hematopoietic Stem Cell Transplantation",
+                "Humans",
+                "Immunotherapy",
+                "Adoptive",
+                "Lymphoma",
+                "Receptors",
+                "Antigen",
+                "T-Cell",
+                "Receptors",
+                "Chimeric Antigen",
+                "T-Lymphocytes",
+                "Tumor Microenvironment"
+            ],
+            "keywords": [
+                "Allogeneic CAR-T",
+                "CAR-T",
+                "Non-Hodgkin lymphoma"
+            ],
+            "language": "eng",
+            "doi": "10.1007/s11864-021-00920-6",
+            "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/35212892/",
+            "doi_url": "https://doi.org/10.1007/s11864-021-00920-6"
+        },
+        {
+            "pmid": "36201139",
+            "rank": 19,
+            "score": 0.7354509830474854,
+            "title": "Top advances in lymphoma for 2021.",
+            "abstract_snippet": "Top advances in lymphoma for 2021.. Chimeric antigen receptor (CAR) T-cell therapy, antibody-drug conjugates, bispecific T-cell redirectors, and agents targeting tonic B-cell receptor signaling have altered the paradigm for three of the most common lymphomas in the year 2021. For diffuse large B-cel...",
+            "authors": [
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Dilan A Patel"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Brad S Kahl"
+                }
+            ],
+            "journal": "Cancer",
+            "pubDate": "2022-12-01",
+            "publicationTypes": [
+                "Journal Article"
+            ],
+            "meshHeadings": [
+                "Humans",
+                "Aged",
+                "Phosphatidylinositol 3-Kinases",
+                "Antineoplastic Combined Chemotherapy Protocols",
+                "Lymphoma",
+                "Large B-Cell",
+                "Diffuse",
+                "Rituximab",
+                "Lymphoma",
+                "Non-Hodgkin",
+                "Antineoplastic Agents"
+            ],
+            "keywords": [
+                "BTK inhibitors",
+                "CAR T-cell therapy",
+                "Diffuse large B-cell lymphoma",
+                "bispecific T-cell redirecting agents",
+                "follicular lymphoma",
+                "marginal zone lymphoma"
+            ],
+            "language": "eng",
+            "doi": "10.1002/cncr.34483",
+            "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/36201139/",
+            "doi_url": "https://doi.org/10.1002/cncr.34483"
+        },
+        {
+            "pmid": "28719798",
+            "rank": 20,
+            "score": 0.7310335040092468,
+            "title": "Chimeric antigen receptor T-cells for B-cell malignancies.",
+            "abstract_snippet": "Chimeric antigen receptor T-cells for B-cell malignancies.. The adoptive transfer of T-lymphocytes modified to express chimeric antigen receptors (CAR-Ts) has produced impressive clinical responses among patients with B-cell malignancies. This has led to a rapid expansion in the number of clinical t...",
+            "authors": [
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Eben I Lichtman"
+                },
+                {
+                    "lastName": null,
+                    "foreName": null,
+                    "initials": null,
+                    "affiliation": null,
+                    "display_name": "Gianpietro Dotti"
+                }
+            ],
+            "journal": "Translational research : the journal of laboratory and clinical medicine",
+            "pubDate": "2017-09-01",
+            "publicationTypes": [
+                "Journal Article",
+                "Review",
+                "Research Support",
+                "Non-U.S. Gov't"
+            ],
+            "meshHeadings": [
+                "Humans",
+                "Immunotherapy",
+                "Adoptive",
+                "Leukemia",
+                "B-Cell",
+                "Lymphoma",
+                "B-Cell",
+                "Receptors",
+                "Antigen",
+                "Recombinant Fusion Proteins",
+                "T-Lymphocytes"
+            ],
+            "keywords": [],
+            "language": "eng",
+            "doi": "10.1016/j.trsl.2017.06.011",
+            "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/28719798/",
+            "doi_url": "https://doi.org/10.1016/j.trsl.2017.06.011"
+        }
+    ]
+}
