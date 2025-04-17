@@ -1,0 +1,6 @@
+- update how query is generated. currently using the original with "AND" operator, then all the mesh terms we generated. perhaps it should be 2 independent pulls. the first is the initial query, and then the 2nd is the llm generated query. if we use this approach we need to reconsider how we rank. 
+- review all possible metadata and data returned from the entrez api
+- clean up repo and restructure
+- add pre commit for black , i sort, and a linter
+- consider migrating to postgres with vector support
+- make sure we are getting the doi, the link to full article, etc.
