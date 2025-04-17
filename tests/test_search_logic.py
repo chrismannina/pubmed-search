@@ -3,9 +3,10 @@ import pytest
 from search import parse_pubmed_date # Import the function to test
 from unittest.mock import patch, MagicMock
 from openai import OpenAI # Import OpenAI for type hinting if needed
+import chromadb # <--- Import chromadb
 
 # Import functions to test
-from search import generate_mesh_terms, hybrid_rank_rrf, get_openai_embeddings, search_pubmed_keywords
+from search import generate_mesh_terms, hybrid_rank_rrf, get_openai_embeddings, search_pubmed_keywords, fetch_abstracts, semantic_rank_articles, ensure_articles_in_db, PubMedArticle, Author
 
 # Test cases for parse_pubmed_date
 @pytest.mark.parametrize("input_dict, expected_output", [
@@ -296,9 +297,412 @@ def test_hybrid_rank_rrf_disjoint():
     assert rrf_results[1][1] == pytest.approx(1.0/2)
     assert rrf_results[2][1] == pytest.approx(1.0/3)
 
-# TODO: Add tests for semantic_rank_articles (requires mocking ChromaDB query)
-# TODO: Add tests for ensure_articles_in_db (complex, requires mocking fetch, embed, ChromaDB add/get)
+# --- Tests for semantic_rank_articles --- 
+
+# Mock ChromaDB collection for semantic ranking tests
+@pytest.fixture
+def mock_chroma_collection_query():
+    mock_collection = MagicMock(spec=chromadb.Collection)
+    # Simulate response from collection.query
+    mock_response = {
+        'ids': [['pmid1', 'pmid3', 'pmid2']], # Note: Order might not match input
+        'distances': [[0.1, 0.3, 0.2]], # Lower distance = more similar
+        'metadatas': None, # Not needed for this func's logic
+        'embeddings': None,
+        'documents': None
+    }
+    mock_collection.query.return_value = mock_response
+    return mock_collection
+
+# Use patch for get_openai_embeddings within semantic_rank_articles tests
+@patch('search.get_openai_embeddings')
+def test_semantic_rank_articles_success(mock_get_embed, mock_chroma_collection_query):
+    """Test successful semantic ranking and sorting."""
+    mock_get_embed.return_value = [[0.1, 0.9]] # Mock query embedding
+    mock_openai_client = MagicMock() # Dummy client needed for signature
+    
+    query = "semantic query"
+    pmids_to_rank = ['pmid1', 'pmid2', 'pmid3']
+    top_k = 3
+    embed_model = "test-model"
+    
+    # Expected: pmid1 (dist 0.1 -> score 0.9), pmid2 (dist 0.2 -> score 0.8), pmid3 (dist 0.3 -> score 0.7)
+    expected_ranking = [('pmid1', pytest.approx(0.9)), ('pmid2', pytest.approx(0.8)), ('pmid3', pytest.approx(0.7))]
+    
+    ranked_results = semantic_rank_articles(
+        query, pmids_to_rank, mock_chroma_collection_query, top_k, mock_openai_client, embed_model
+    )
+    
+    assert ranked_results == expected_ranking
+    # Verify mocks were called
+    mock_get_embed.assert_called_once_with([query], mock_openai_client, embed_model)
+    mock_chroma_collection_query.query.assert_called_once()
+    call_args, call_kwargs = mock_chroma_collection_query.query.call_args
+    assert call_kwargs['query_embeddings'] == [[0.1, 0.9]]
+
+@patch('search.get_openai_embeddings')
+def test_semantic_rank_articles_empty_input(mock_get_embed, mock_chroma_collection_query):
+    """Test semantic ranking with empty input PMIDs."""
+    mock_openai_client = MagicMock()
+    ranked_results = semantic_rank_articles(
+        "query", [], mock_chroma_collection_query, 3, mock_openai_client, "model"
+    )
+    assert ranked_results == []
+    mock_get_embed.assert_not_called()
+    mock_chroma_collection_query.query.assert_not_called()
+
+@patch('search.get_openai_embeddings')
+def test_semantic_rank_articles_embed_fail(mock_get_embed, mock_chroma_collection_query):
+    """Test semantic ranking when query embedding fails."""
+    mock_get_embed.return_value = [] # Simulate embedding failure
+    mock_openai_client = MagicMock()
+    ranked_results = semantic_rank_articles(
+        "query", ['1'], mock_chroma_collection_query, 3, mock_openai_client, "model"
+    )
+    assert ranked_results == []
+    mock_chroma_collection_query.query.assert_not_called()
+
+@patch('search.get_openai_embeddings')
+def test_semantic_rank_articles_chroma_fail(mock_get_embed, mock_chroma_collection_query):
+    """Test semantic ranking when ChromaDB query fails."""
+    mock_get_embed.return_value = [[0.1]]
+    mock_chroma_collection_query.query.side_effect = Exception("DB Error")
+    mock_openai_client = MagicMock()
+    ranked_results = semantic_rank_articles(
+        "query", ['1'], mock_chroma_collection_query, 3, mock_openai_client, "model"
+    )
+    assert ranked_results == []
+    mock_chroma_collection_query.query.assert_called_once()
+
+@patch('search.get_openai_embeddings')
+def test_semantic_rank_articles_top_k_limit(mock_get_embed, mock_chroma_collection_query):
+    """Test that top_k correctly limits results."""
+    mock_get_embed.return_value = [[0.1]]
+    # Make query return more results than top_k
+    mock_response = {
+        'ids': [['pmid1', 'pmid3', 'pmid2', 'pmid4']], 
+        'distances': [[0.1, 0.3, 0.2, 0.4]], 
+        # ... other keys ...
+    }
+    mock_chroma_collection_query.query.return_value = mock_response
+    mock_openai_client = MagicMock()
+
+    ranked_results = semantic_rank_articles(
+        "query", ['pmid1', 'pmid2', 'pmid3', 'pmid4'], mock_chroma_collection_query, 2, mock_openai_client, "model"
+    )
+    # Expected: pmid1 (score 0.9), pmid2 (score 0.8)
+    assert len(ranked_results) == 2
+    assert ranked_results[0][0] == 'pmid1'
+    assert ranked_results[1][0] == 'pmid2'
+
+@patch('search.get_openai_embeddings')
+def test_semantic_rank_articles_filters_pmids(mock_get_embed, mock_chroma_collection_query):
+    """Test that results are filtered by pmids_to_rank."""
+    mock_get_embed.return_value = [[0.1]]
+    # Make query return PMIDs not in pmids_to_rank
+    mock_response = {
+        'ids': [['pmid1', 'pmid99', 'pmid2']], 
+        'distances': [[0.1, 0.15, 0.2]], 
+        # ... other keys ...
+    }
+    mock_chroma_collection_query.query.return_value = mock_response
+    mock_openai_client = MagicMock()
+    
+    ranked_results = semantic_rank_articles(
+        "query", ['pmid1', 'pmid2'], mock_chroma_collection_query, 3, mock_openai_client, "model"
+    )
+    # Expected: pmid1 (score 0.9), pmid2 (score 0.8). pmid99 should be excluded.
+    assert len(ranked_results) == 2
+    assert ranked_results[0][0] == 'pmid1'
+    assert ranked_results[1][0] == 'pmid2'
 
 # Remove the old example test
 # def test_example():
-#     assert True 
+#     assert True  
+
+# --- Mocks for Entrez --- 
+
+# Sample data mimicking Entrez.read output for fetch_abstracts
+SAMPLE_EFETCH_RECORD_COMPLETE = {
+    'PubmedArticle': [{
+        'MedlineCitation': {
+            'PMID': '123',
+            'Article': {
+                'ArticleTitle': 'Test Title 1',
+                'Language': ['eng'],
+                'Pagination': {'MedlinePgn': '1-10'},
+                'Abstract': {'AbstractText': ['Abstract content.']},
+                'AuthorList': [{
+                    'LastName': 'Smith', 'ForeName': 'John', 'Initials': 'J'
+                }],
+                'Journal': {
+                    'Title': 'Journal of Testing', 
+                    'ISOAbbreviation': 'J Test',
+                    'JournalIssue': {'Volume': '10', 'Issue': '2', 'PubDate': {'Year': '2022', 'Month': 'Mar'}}
+                },
+                'PublicationTypeList': ['Journal Article', 'Review']
+            },
+            'MeshHeadingList': [{'DescriptorName': 'MeSH Term 1'}],
+            'KeywordList': [['Keyword1', 'Keyword2']] # Nested list structure
+        },
+        'PubmedData': {
+            'ArticleIdList': [{'IdType': 'pubmed', '#text': '123'}, {'IdType': 'doi', '#text': '10.1234/test.doi'}]
+        }
+    }]
+}
+
+SAMPLE_EFETCH_RECORD_MINIMAL = {
+    'PubmedArticle': [{
+        'MedlineCitation': {
+            'PMID': '456',
+            'Article': {
+                'ArticleTitle': 'Minimal Title',
+                'Abstract': {'AbstractText': ['Minimal abstract.']},
+                'Journal': {'JournalIssue': {'PubDate': {'MedlineDate': '2021'}}}
+            }
+        },
+        'PubmedData': {}
+    }]
+}
+
+SAMPLE_EFETCH_RECORD_NO_ABSTRACT = {
+    'PubmedArticle': [{
+        'MedlineCitation': {
+            'PMID': '789',
+            'Article': {
+                'ArticleTitle': 'No Abstract Title',
+                 'Journal': {'JournalIssue': {'PubDate': {'Year': '2023'}}}
+            }
+        },
+         'PubmedData': {}
+    }]
+}
+
+# --- Tests for fetch_abstracts --- 
+
+@patch('search.Entrez.read')
+@patch('search.Entrez.efetch')
+def test_fetch_abstracts_success_complete(mock_efetch, mock_read):
+    """Test fetching a complete article record."""
+    mock_efetch.return_value = MagicMock() # Simulate handle
+    mock_read.return_value = SAMPLE_EFETCH_RECORD_COMPLETE
+    
+    pmids = ['123']
+    email = "test@example.com"
+    
+    articles = fetch_abstracts(pmids, email)
+    
+    mock_efetch.assert_called_once_with(db="pubmed", id=pmids, rettype="medline", retmode="xml")
+    mock_read.assert_called_once()
+    assert '123' in articles
+    article = articles['123']
+    assert article.pmid == '123'
+    assert article.title == 'Test Title 1'
+    assert article.abstract == 'Abstract content.'
+    assert article.pubDate == '2022-03-01'
+    assert article.doi == '10.1234/test.doi'
+    assert article.journalTitle == 'Journal of Testing'
+    assert len(article.authors) == 1
+    assert article.authors[0].lastName == 'Smith'
+    assert article.publicationTypes == ['Journal Article', 'Review']
+    assert article.meshHeadings == ['MeSH Term 1']
+    assert article.keywords == ['Keyword1', 'Keyword2']
+
+@patch('search.Entrez.read')
+@patch('search.Entrez.efetch')
+def test_fetch_abstracts_success_minimal(mock_efetch, mock_read):
+    """Test fetching a record with minimal data."""
+    mock_efetch.return_value = MagicMock()
+    mock_read.return_value = SAMPLE_EFETCH_RECORD_MINIMAL
+    
+    pmids = ['456']
+    email = "test@example.com"
+    articles = fetch_abstracts(pmids, email)
+    
+    assert '456' in articles
+    article = articles['456']
+    assert article.title == 'Minimal Title'
+    assert article.abstract == 'Minimal abstract.'
+    assert article.pubDate == '2021-01-01' # Parsed from MedlineDate
+    assert article.doi is None
+    assert article.authors == []
+    assert article.keywords == []
+
+@patch('search.Entrez.read')
+@patch('search.Entrez.efetch')
+def test_fetch_abstracts_no_abstract_skipped(mock_efetch, mock_read):
+    """Test that articles without abstracts are skipped."""
+    mock_efetch.return_value = MagicMock()
+    # Combine records, one with abstract, one without
+    combined_records = {
+        'PubmedArticle': 
+            SAMPLE_EFETCH_RECORD_MINIMAL['PubmedArticle'] + 
+            SAMPLE_EFETCH_RECORD_NO_ABSTRACT['PubmedArticle']
+    }
+    mock_read.return_value = combined_records
+    
+    pmids = ['456', '789']
+    email = "test@example.com"
+    articles = fetch_abstracts(pmids, email)
+    
+    assert '456' in articles # Minimal article should be present
+    assert '789' not in articles # Article with no abstract should be skipped
+    assert len(articles) == 1
+
+@patch('search.Entrez.efetch')
+def test_fetch_abstracts_efetch_error(mock_efetch):
+    """Test handling of Entrez.efetch errors."""
+    mock_efetch.side_effect = Exception("EFetch failed")
+    articles = fetch_abstracts(['111'], "test@example.com")
+    assert articles == {}  
+
+# --- Tests for ensure_articles_in_db --- 
+
+# Mock ChromaDB collection for ensure_articles_in_db tests
+@pytest.fixture
+def mock_chroma_collection_ensure():
+    mock_collection = MagicMock(spec=chromadb.Collection)
+    # We'll configure get/add responses within each test
+    return mock_collection
+
+# Mock fetch_abstracts response 
+@pytest.fixture
+def mock_fetched_articles():
+    # Simulate returning data for PMIDs '2' and '3'
+    return {
+        '2': PubMedArticle(pmid='2', title='Title 2', abstract='Abstract 2', authors=[Author(lastName='Doe')], pubDate='2023-01-01'),
+        '3': PubMedArticle(pmid='3', title='Title 3', abstract='Abstract 3', authors=[Author(lastName='Ray')], pubDate='2024-01-01')
+    }
+
+# Mock get_openai_embeddings response
+@pytest.fixture
+def mock_embeddings_ensure():
+    return [[0.1]*10], [[0.2]*10] # Two dummy embeddings
+
+# Patch necessary functions within the tests for ensure_articles_in_db
+@patch('search.fetch_abstracts')
+@patch('search.get_openai_embeddings')
+def test_ensure_articles_all_exist(mock_get_embed, mock_fetch, mock_chroma_collection_ensure):
+    """Test case where all requested PMIDs already exist in DB."""
+    pmids_to_check = ['1', '2', '3']
+    mock_chroma_collection_ensure.get.return_value = {'ids': ['1', '2', '3']} # Simulate all exist
+    mock_openai_client = MagicMock()
+    
+    result = ensure_articles_in_db(pmids_to_check, mock_chroma_collection_ensure, mock_openai_client, "m", "a", "e")
+    
+    assert result == ['1', '2', '3'] # Should return the original list
+    mock_chroma_collection_ensure.get.assert_called_once_with(ids=pmids_to_check, include=[])
+    # Crucially, fetch, embed, and add should NOT have been called
+    mock_fetch.assert_not_called()
+    mock_get_embed.assert_not_called()
+    mock_chroma_collection_ensure.add.assert_not_called()
+
+@patch('search.fetch_abstracts')
+@patch('search.get_openai_embeddings')
+def test_ensure_articles_none_exist(mock_get_embed, mock_fetch, mock_chroma_collection_ensure, mock_fetched_articles, mock_embeddings_ensure):
+    """Test case where no PMIDs exist and need to be fetched, embedded, added."""
+    pmids_to_check = ['2', '3']
+    mock_chroma_collection_ensure.get.return_value = {'ids': []} # Simulate none exist
+    mock_fetch.return_value = mock_fetched_articles # Simulate fetch success for 2, 3
+    mock_get_embed.return_value = mock_embeddings_ensure # Simulate embed success
+    mock_chroma_collection_ensure.add.return_value = None # Simulate add success
+    mock_openai_client = MagicMock()
+    embed_model = "test-model"
+    embed_mode = "title_abstract" # Match default or pass explicitly
+    email = "test@example.com"
+
+    result = ensure_articles_in_db(pmids_to_check, mock_chroma_collection_ensure, mock_openai_client, embed_model, embed_mode, email)
+    
+    assert set(result) == {'2', '3'} # Order might vary slightly depending on set union
+    mock_chroma_collection_ensure.get.assert_called_once_with(ids=pmids_to_check, include=[])
+    mock_fetch.assert_called_once_with(['2', '3'], email)
+    # Check that embedding was called with prepared documents
+    mock_get_embed.assert_called_once()
+    call_args, _ = mock_get_embed.call_args
+    assert call_args[0] == ['Title 2. Abstract 2', 'Title 3. Abstract 3'] # Check combined text
+    assert call_args[2] == embed_model # Check model passed
+    # Check that add was called correctly
+    mock_chroma_collection_ensure.add.assert_called_once()
+    _, add_kwargs = mock_chroma_collection_ensure.add.call_args
+    assert add_kwargs['ids'] == ['2', '3']
+    assert add_kwargs['embeddings'] == mock_embeddings_ensure
+    assert add_kwargs['documents'] == ['Title 2. Abstract 2', 'Title 3. Abstract 3']
+    assert len(add_kwargs['metadatas']) == 2 # Check metadatas were prepared
+
+@patch('search.fetch_abstracts')
+@patch('search.get_openai_embeddings')
+def test_ensure_articles_some_exist(mock_get_embed, mock_fetch, mock_chroma_collection_ensure, mock_fetched_articles, mock_embeddings_ensure):
+    """Test case where some PMIDs exist, others need fetching."""
+    pmids_to_check = ['1', '2', '3'] # 1 exists, 2 and 3 need fetching
+    mock_chroma_collection_ensure.get.return_value = {'ids': ['1']} 
+    mock_fetch.return_value = mock_fetched_articles # Fetches 2, 3
+    mock_get_embed.return_value = mock_embeddings_ensure
+    mock_openai_client = MagicMock()
+    email = "test@example.com"
+
+    result = ensure_articles_in_db(pmids_to_check, mock_chroma_collection_ensure, mock_openai_client, "m", "title_abstract", email)
+
+    assert set(result) == {'1', '2', '3'}
+    mock_chroma_collection_ensure.get.assert_called_once_with(ids=pmids_to_check, include=[])
+    # Fetch only called for missing PMIDs
+    mock_fetch.assert_called_once_with(['2', '3'], email)
+    # Embed only called for fetched PMIDs
+    mock_get_embed.assert_called_once()
+    call_args, _ = mock_get_embed.call_args
+    assert call_args[0] == ['Title 2. Abstract 2', 'Title 3. Abstract 3']
+    # Add only called for fetched PMIDs
+    mock_chroma_collection_ensure.add.assert_called_once()
+    _, add_kwargs = mock_chroma_collection_ensure.add.call_args
+    assert add_kwargs['ids'] == ['2', '3']
+
+@patch('search.fetch_abstracts')
+@patch('search.get_openai_embeddings')
+def test_ensure_articles_fetch_fails(mock_get_embed, mock_fetch, mock_chroma_collection_ensure):
+    """Test case where fetching new articles fails."""
+    pmids_to_check = ['1', '2'] # 1 exists, 2 needs fetching
+    mock_chroma_collection_ensure.get.return_value = {'ids': ['1']}
+    mock_fetch.return_value = {} # Simulate fetch returning nothing
+    mock_openai_client = MagicMock()
+
+    result = ensure_articles_in_db(pmids_to_check, mock_chroma_collection_ensure, mock_openai_client, "m", "a", "e")
+
+    assert result == ['1'] # Only the existing one should be returned
+    mock_fetch.assert_called_once_with(['2'], "e")
+    mock_get_embed.assert_not_called()
+    mock_chroma_collection_ensure.add.assert_not_called()
+
+@patch('search.fetch_abstracts')
+@patch('search.get_openai_embeddings')
+def test_ensure_articles_embed_fails(mock_get_embed, mock_fetch, mock_chroma_collection_ensure, mock_fetched_articles):
+    """Test case where embedding new articles fails."""
+    pmids_to_check = ['1', '2'] # 1 exists, 2 needs fetching
+    mock_chroma_collection_ensure.get.return_value = {'ids': ['1']}
+    # Only need to fetch article 2 for this test
+    mock_fetch.return_value = {'2': mock_fetched_articles['2']}
+    mock_get_embed.return_value = [] # Simulate embedding failure
+    mock_openai_client = MagicMock()
+
+    result = ensure_articles_in_db(pmids_to_check, mock_chroma_collection_ensure, mock_openai_client, "m", "title_abstract", "e")
+
+    assert result == ['1'] # Only the existing one should be returned
+    mock_fetch.assert_called_once_with(['2'], "e")
+    mock_get_embed.assert_called_once()
+    mock_chroma_collection_ensure.add.assert_not_called()
+
+@patch('search.fetch_abstracts')
+@patch('search.get_openai_embeddings')
+def test_ensure_articles_add_fails(mock_get_embed, mock_fetch, mock_chroma_collection_ensure, mock_fetched_articles, mock_embeddings_ensure):
+    """Test case where adding to ChromaDB fails."""
+    pmids_to_check = ['1', '2'] # 1 exists, 2 needs fetching
+    mock_chroma_collection_ensure.get.return_value = {'ids': ['1']}
+    mock_fetch.return_value = {'2': mock_fetched_articles['2']} # Fetch only 2
+    mock_get_embed.return_value = [mock_embeddings_ensure[0]] # Embed only 2
+    mock_chroma_collection_ensure.add.side_effect = Exception("Add failed") # Simulate add failure
+    mock_openai_client = MagicMock()
+
+    result = ensure_articles_in_db(pmids_to_check, mock_chroma_collection_ensure, mock_openai_client, "m", "title_abstract", "e")
+
+    assert result == ['1'] # Only the existing one should be returned
+    mock_fetch.assert_called_once_with(['2'], "e")
+    mock_get_embed.assert_called_once()
+    mock_chroma_collection_ensure.add.assert_called_once()  

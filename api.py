@@ -287,10 +287,13 @@ async def perform_search(request: SearchRequest):
         doi = meta.get('doi')
         doi_url_str = f"https://doi.org/{doi}" if doi else None
         
+        # Ensure score is always float for the model
+        score_float = float(score) if score is not None else None
+        
         item = SearchResultItem(
             pmid=pmid,
             rank=rank + 1,
-            score=score,
+            score=score_float, # Use the explicitly cast float score
             title=meta.get('title'),
             abstract_snippet=doc[:300] + '...' if doc else None,
             authors=authors_api,

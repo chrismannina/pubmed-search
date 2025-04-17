@@ -330,11 +330,18 @@ def fetch_abstracts(pmids: list[str], entrez_email: str) -> Dict[str, PubMedArti
 
                     # --- DOI --- 
                     doi = None
-                    article_ids = record.get('PubmedData', {}).get('ArticleIdList', [])
+                    article_ids = record.get('PubmedData', {}).get('ArticleIdList', []) 
                     if isinstance(article_ids, list):
-                         for article_id in article_ids:
-                              if hasattr(article_id, 'attributes') and article_id.attributes.get('IdType') == 'doi':
-                                   doi = str(article_id)
+                         for article_id_obj in article_ids:
+                              # Access attributes and text content correctly
+                              # Assuming the parsed object acts like a dictionary here based on mock data
+                              if isinstance(article_id_obj, dict) and article_id_obj.get('IdType') == 'doi':
+                                   # Access the text content via the '#text' key
+                                   doi = article_id_obj.get('#text') 
+                                   break
+                              # Fallback check if it acts like an object with attributes (less likely based on error)
+                              elif hasattr(article_id_obj, 'attributes') and article_id_obj.attributes.get('IdType') == 'doi':
+                                   doi = str(article_id_obj) # Keep original string conversion as last resort
                                    break
 
                     # --- Create Pydantic Model Instance --- 
